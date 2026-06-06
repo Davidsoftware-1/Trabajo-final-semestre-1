@@ -1,0 +1,28 @@
+{
+  "users": [
+    {
+      "id": 1780771943749,
+      "nombre": "Test User",
+      "correo": "testuser@gmail.com",
+      "password": "$2a$10$Lv669nygO8F1oLlxvnbYqOioAMvBHC2z1XPK00.0toKM0CBt.IPhi",
+      "provider": "Gmail",
+      "xp": 40,
+      "streak": 4,
+      "completed": [
+        1
+      ]
+    },
+    {
+      "id": 1780772307900,
+      "nombre": "Prueba UI",
+      "correo": "pruebaui@gmail.com",
+      "password": "$2a$10$HtPCr16OycyfqiOQ2PuKmePOOnXOwRJDzT9lFarjlXeWjzYTmF6Oi",
+      "provider": "Gmail",
+      "xp": 40,
+      "streak": 4,
+      "completed": [
+        1
+      ]
+    }
+  ]
+}

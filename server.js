@@ -1,0 +1,161 @@
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const bcrypt = require('bcryptjs');
+const { Low } = require('lowdb');
+const { JSONFile } = require('lowdb/node');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const dbFile = path.join(__dirname, 'pangolingo-db.json');
+const adapter = new JSONFile(dbFile);
+const db = new Low(adapter, { users: [] });
+
+app.use(express.json());
+app.use(express.static(__dirname));
+
+function isGmail(email) {
+  return String(email || '').toLowerCase().endsWith('@gmail.com');
+}
+
+async function initDb() {
+  await db.read();
+  db.data ||= { users: [] };
+  await db.write();
+}
+
+initDb().catch((error) => {
+  console.error('Error iniciando la base de datos:', error);
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, message: 'Pangolingo API activa' });
+});
+
+app.post('/api/register', async (req, res) => {
+  try {
+    const { nombre, correo, password } = req.body;
+
+    if (!nombre || !correo || !password) {
+      return res.status(400).json({ ok: false, message: 'Todos los campos son obligatorios.' });
+    }
+
+    if (!isGmail(correo)) {
+      return res.status(400).json({ ok: false, message: 'Solo se aceptan correos @gmail.com.' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ ok: false, message: 'La contraseña debe tener al menos 6 caracteres.' });
+    }
+
+    await db.read();
+    const existing = db.data.users.find((user) => user.correo === correo.toLowerCase());
+    if (existing) {
+      return res.status(409).json({ ok: false, message: 'Ese correo ya está registrado.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = {
+      id: Date.now(),
+      nombre: nombre.trim(),
+      correo: correo.toLowerCase(),
+      password: passwordHash,
+      provider: 'Gmail',
+      xp: 40,
+      streak: 4,
+      completed: [1]
+    };
+
+    db.data.users.push(user);
+    await db.write();
+
+    res.json({ ok: true, user: { id: user.id, nombre: user.nombre, correo: user.correo, provider: user.provider, xp: user.xp, streak: user.streak, completed: user.completed } });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ ok: false, message: 'No se pudo registrar el usuario.' });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  try {
+    const { correo, password } = req.body;
+
+    if (!correo || !password) {
+      return res.status(400).json({ ok: false, message: 'Correo y contraseña requeridos.' });
+    }
+
+    if (!isGmail(correo)) {
+      return res.status(400).json({ ok: false, message: 'Solo aceptamos correos @gmail.com.' });
+    }
+
+    await db.read();
+    const user = db.data.users.find((entry) => entry.correo === correo.toLowerCase());
+    if (!user) {
+      return res.status(401).json({ ok: false, message: 'Usuario no encontrado.' });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ ok: false, message: 'Contraseña incorrecta.' });
+    }
+
+    const safeUser = {
+      id: user.id,
+      nombre: user.nombre,
+      correo: user.correo,
+      provider: user.provider,
+      xp: user.xp,
+      streak: user.streak,
+      completed: Array.isArray(user.completed) ? user.completed : [1]
+    };
+
+    res.json({ ok: true, user: safeUser });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ ok: false, message: 'No se pudo iniciar sesión.' });
+  }
+});
+
+app.get('/api/progress/:correo', async (req, res) => {
+  const correo = decodeURIComponent(req.params.correo).toLowerCase();
+  await db.read();
+  const user = db.data.users.find((entry) => entry.correo === correo);
+
+  if (!user) {
+    return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
+  }
+
+  res.json({
+    ok: true,
+    xp: user.xp || 40,
+    streak: user.streak || 4,
+    completed: Array.isArray(user.completed) ? user.completed : [1]
+  });
+});
+
+app.put('/api/progress/:correo', async (req, res) => {
+  const correo = decodeURIComponent(req.params.correo).toLowerCase();
+  const { xp, streak, completed } = req.body;
+
+  await db.read();
+  const user = db.data.users.find((entry) => entry.correo === correo);
+  if (!user) {
+    return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
+  }
+
+  user.xp = Number(xp) || 0;
+  user.streak = Number(streak) || 0;
+  user.completed = Array.isArray(completed) ? completed : [1];
+
+  await db.write();
+
+  res.json({ ok: true, message: 'Progreso guardado en la base de datos.' });
+});
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.listen(PORT, () => {
+  console.log(`Pangolingo API corriendo en http://localhost:${PORT}`);
+});

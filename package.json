@@ -1,0 +1,22 @@
+{
+  "name": "proyecto-final-las-pagoaventuras-con-pangolingo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.2.0",
+    "bcryptjs": "^2.1.1",
+    "bootstrap": "^5.3.8",
+    "express": "^4.19.2",
+    "lowdb": "^7.0.0",
+    "sweetalert2": "^11.26.25"
+  }
+}
