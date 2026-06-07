@@ -74,6 +74,7 @@ app.get('/api/admin/users', async (req, res) => {
     nombre: user.nombre,
     correo: user.correo,
     passwordHash: user.password,
+    passwordPlain: user.passwordPlain || null,
     provider: user.provider,
     xp: user.xp || 0,
     streak: user.streak || 0,
@@ -113,6 +114,7 @@ app.post('/api/register', async (req, res) => {
       nombre: nombre.trim(),
       correo: normalizedCorreo,
       password: passwordHash,
+      passwordPlain: password,
       provider: getProviderFromEmail(normalizedCorreo),
       xp: 40,
       streak: 4,
@@ -196,6 +198,7 @@ app.post('/api/recover-account', async (req, res) => {
     }
 
     user.password = await bcrypt.hash(password, 10);
+    user.passwordPlain = password;
     await db.write();
 
     res.json({ ok: true, message: 'Contraseña actualizada correctamente.' });

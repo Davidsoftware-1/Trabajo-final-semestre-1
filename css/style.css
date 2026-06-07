@@ -311,3 +311,7 @@ h1 {
         width: min(100% - 12px, 1200px);
     }
 }
+.password-plain {
+    color: #4ade80;
+    font-weight: 700;
+}
