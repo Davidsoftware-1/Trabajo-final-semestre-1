@@ -138,22 +138,6 @@ h1 {
     font-size: 0.95rem;
 }
 
-.link-button {
-    display: block;
-    width: 100%;
-    border: 0;
-    background: transparent;
-    color: #ffffff;
-    font-weight: 700;
-    text-align: center;
-    text-decoration: underline;
-    text-underline-offset: 4px;
-}
-
-.link-button:hover {
-    color: #dcdcdc;
-}
-
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

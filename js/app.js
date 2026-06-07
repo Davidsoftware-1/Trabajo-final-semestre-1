@@ -2,8 +2,8 @@ const STORAGE_KEY = "pangolingo-user";
 const PROGRESS_KEY = "pangolingo-progress";
 const API_URL = "/api";
 
-function isGmail(email) {
-  return String(email || "").toLowerCase().endsWith("@gmail.com");
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(email || "").trim().toLowerCase());
 }
 
 const lessons = [
@@ -129,8 +129,8 @@ async function registerUser(event) {
     return;
   }
 
-  if (!isGmail(correo)) {
-    Swal.fire({ title: "Correo no válido", text: "Solo se aceptan correos con dominio @gmail.com.", icon: "error" });
+  if (!isValidEmail(correo)) {
+    Swal.fire({ title: "Correo no válido", text: "Ingresa un correo real, por ejemplo usuario@empresa.com.", icon: "error" });
     return;
   }
 
@@ -161,8 +161,8 @@ async function loginUser(event) {
     return;
   }
 
-  if (!isGmail(correo)) {
-    Swal.fire({ title: "Correo no válido", text: "Solo puedes iniciar sesión con un correo @gmail.com.", icon: "error" });
+  if (!isValidEmail(correo)) {
+    Swal.fire({ title: "Correo no válido", text: "Ingresa un correo con formato correcto.", icon: "error" });
     return;
   }
 
@@ -186,7 +186,7 @@ async function recoverAccount() {
   const { value: formValues, isConfirmed } = await Swal.fire({
     title: "Recuperar cuenta",
     html: `
-      <input id="recoveryCorreo" class="swal2-input" type="email" placeholder="Correo Gmail registrado">
+      <input id="recoveryCorreo" class="swal2-input" type="email" placeholder="Correo registrado">
       <input id="recoveryPassword" class="swal2-input" type="password" placeholder="Nueva contraseña">
     `,
     confirmButtonText: "Actualizar contraseña",
@@ -202,8 +202,8 @@ async function recoverAccount() {
         return false;
       }
 
-      if (!isGmail(correo)) {
-        Swal.showValidationMessage("El correo debe terminar en @gmail.com.");
+      if (!isValidEmail(correo)) {
+        Swal.showValidationMessage("Ingresa un correo con formato correcto.");
         return false;
       }
 

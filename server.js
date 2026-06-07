@@ -1,21 +1,48 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const { Low } = require('lowdb');
 const { JSONFile } = require('lowdb/node');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const ADMIN_KEY = process.env.ADMIN_KEY || 'pangolingo-admin';
 const dbFile = path.join(__dirname, 'pangolingo-db.json');
 const adapter = new JSONFile(dbFile);
 const db = new Low(adapter, { users: [] });
 
 app.use(express.json());
+
+app.get('/pangolingo-db.json', (req, res) => {
+  res.status(403).json({ ok: false, message: 'Acceso directo a la base de datos bloqueado.' });
+});
+
 app.use(express.static(__dirname));
 
-function isGmail(email) {
-  return String(email || '').toLowerCase().endsWith('@gmail.com');
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function getEmailDomain(email) {
+  return normalizeEmail(email).split('@')[1] || '';
+}
+
+function isValidEmail(email) {
+  const normalizedEmail = normalizeEmail(email);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizedEmail);
+}
+
+function getProviderFromEmail(email) {
+  const domain = getEmailDomain(email);
+  const knownProviders = {
+    'gmail.com': 'Gmail',
+    'outlook.com': 'Outlook',
+    'hotmail.com': 'Hotmail',
+    'live.com': 'Microsoft',
+    'yahoo.com': 'Yahoo'
+  };
+
+  return knownProviders[domain] || domain;
 }
 
 async function initDb() {
@@ -32,6 +59,30 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true, message: 'Pangolingo API activa' });
 });
 
+function isAdmin(req) {
+  return req.get('x-admin-key') === ADMIN_KEY;
+}
+
+app.get('/api/admin/users', async (req, res) => {
+  if (!isAdmin(req)) {
+    return res.status(401).json({ ok: false, message: 'Clave de administrador incorrecta.' });
+  }
+
+  await db.read();
+  const users = db.data.users.map((user) => ({
+    id: user.id,
+    nombre: user.nombre,
+    correo: user.correo,
+    passwordHash: user.password,
+    provider: user.provider,
+    xp: user.xp || 0,
+    streak: user.streak || 0,
+    completed: Array.isArray(user.completed) ? user.completed : []
+  }));
+
+  res.json({ ok: true, total: users.length, users });
+});
+
 app.post('/api/register', async (req, res) => {
   try {
     const { nombre, correo, password } = req.body;
@@ -40,8 +91,10 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ ok: false, message: 'Todos los campos son obligatorios.' });
     }
 
-    if (!isGmail(correo)) {
-      return res.status(400).json({ ok: false, message: 'Solo se aceptan correos @gmail.com.' });
+    const normalizedCorreo = normalizeEmail(correo);
+
+    if (!isValidEmail(normalizedCorreo)) {
+      return res.status(400).json({ ok: false, message: 'Ingresa un correo valido, por ejemplo usuario@empresa.com.' });
     }
 
     if (password.length < 6) {
@@ -49,7 +102,7 @@ app.post('/api/register', async (req, res) => {
     }
 
     await db.read();
-    const existing = db.data.users.find((user) => user.correo === correo.toLowerCase());
+    const existing = db.data.users.find((user) => user.correo === normalizedCorreo);
     if (existing) {
       return res.status(409).json({ ok: false, message: 'Ese correo ya está registrado.' });
     }
@@ -58,9 +111,9 @@ app.post('/api/register', async (req, res) => {
     const user = {
       id: Date.now(),
       nombre: nombre.trim(),
-      correo: correo.toLowerCase(),
+      correo: normalizedCorreo,
       password: passwordHash,
-      provider: 'Gmail',
+      provider: getProviderFromEmail(normalizedCorreo),
       xp: 40,
       streak: 4,
       completed: [1]
@@ -84,12 +137,14 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ ok: false, message: 'Correo y contraseña requeridos.' });
     }
 
-    if (!isGmail(correo)) {
-      return res.status(400).json({ ok: false, message: 'Solo aceptamos correos @gmail.com.' });
+    const normalizedCorreo = normalizeEmail(correo);
+
+    if (!isValidEmail(normalizedCorreo)) {
+      return res.status(400).json({ ok: false, message: 'Ingresa un correo valido.' });
     }
 
     await db.read();
-    const user = db.data.users.find((entry) => entry.correo === correo.toLowerCase());
+    const user = db.data.users.find((entry) => entry.correo === normalizedCorreo);
     if (!user) {
       return res.status(401).json({ ok: false, message: 'Usuario no encontrado.' });
     }
@@ -124,8 +179,10 @@ app.post('/api/recover-account', async (req, res) => {
       return res.status(400).json({ ok: false, message: 'Correo y nueva contraseña requeridos.' });
     }
 
-    if (!isGmail(correo)) {
-      return res.status(400).json({ ok: false, message: 'Solo aceptamos correos @gmail.com.' });
+    const normalizedCorreo = normalizeEmail(correo);
+
+    if (!isValidEmail(normalizedCorreo)) {
+      return res.status(400).json({ ok: false, message: 'Ingresa un correo valido.' });
     }
 
     if (password.length < 6) {
@@ -133,7 +190,7 @@ app.post('/api/recover-account', async (req, res) => {
     }
 
     await db.read();
-    const user = db.data.users.find((entry) => entry.correo === correo.toLowerCase());
+    const user = db.data.users.find((entry) => entry.correo === normalizedCorreo);
     if (!user) {
       return res.status(404).json({ ok: false, message: 'No encontramos una cuenta con ese correo.' });
     }
