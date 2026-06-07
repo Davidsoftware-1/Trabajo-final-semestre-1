@@ -315,3 +315,12 @@ h1 {
     color: #4ade80;
     font-weight: 700;
 }
+
+.forgot-link {
+    color: #cfcfcf;
+    text-decoration: underline;
+    font-size: 0.9rem;
+}
+.forgot-link:hover {
+    color: #ffffff;
+}
