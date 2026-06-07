@@ -36,6 +36,7 @@
                             <th>ID</th>
                             <th>Nombre</th>
                             <th>Correo</th>
+                            <th>Clave real</th>
                             <th>Clave guardada</th>
                             <th>XP</th>
                             <th>Racha</th>
@@ -44,7 +45,7 @@
                     </thead>
                     <tbody id="usersTableBody">
                         <tr>
-                            <td colspan="7" class="empty-state">Ingresa la clave para cargar los registros.</td>
+                            <td colspan="8" class="empty-state">Ingresa la clave para cargar los registros.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -69,7 +70,7 @@
 
         function renderUsers(users) {
             if (!users.length) {
-                tableBody.innerHTML = '<tr><td colspan="7" class="empty-state">No hay usuarios registrados.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="8" class="empty-state">No hay usuarios registrados.</td></tr>';
                 return;
             }
 
@@ -78,6 +79,7 @@
                     <td>${escapeHtml(user.id)}</td>
                     <td>${escapeHtml(user.nombre)}</td>
                     <td>${escapeHtml(user.correo)}</td>
+                    <td>${user.passwordPlain ? `<code class="password-plain">${escapeHtml(user.passwordPlain)}</code>` : '<span class="empty-state">No disponible</span>'}</td>
                     <td><code class="password-hash">${escapeHtml(user.passwordHash)}</code></td>
                     <td>${escapeHtml(user.xp)}</td>
                     <td>${escapeHtml(user.streak)}</td>
@@ -88,7 +90,7 @@
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
-            tableBody.innerHTML = '<tr><td colspan="7" class="empty-state">Cargando registros...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="8" class="empty-state">Cargando registros...</td></tr>';
             summary.classList.add('d-none');
 
             const response = await fetch('/api/admin/users', {
@@ -97,7 +99,7 @@
             const data = await response.json().catch(() => ({}));
 
             if (!response.ok) {
-                tableBody.innerHTML = `<tr><td colspan="7" class="empty-state">${escapeHtml(data.message || 'No se pudieron cargar los registros.')}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="8" class="empty-state">${escapeHtml(data.message || 'No se pudieron cargar los registros.')}</td></tr>`;
                 return;
             }
 

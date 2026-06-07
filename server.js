@@ -13,6 +13,16 @@ const db = new Low(adapter, { users: [] });
 
 app.use(express.json());
 
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, x-admin-key');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
 app.get('/pangolingo-db.json', (req, res) => {
   res.status(403).json({ ok: false, message: 'Acceso directo a la base de datos bloqueado.' });
 });
@@ -49,10 +59,11 @@ async function initDb() {
   await db.read();
   db.data ||= { users: [] };
   await db.write();
+  console.log(`[DB] Base de datos lista (${dbFile}). Usuarios: ${db.data.users.length}`);
 }
 
 initDb().catch((error) => {
-  console.error('Error iniciando la base de datos:', error);
+  console.error('[DB] Error iniciando la base de datos. ¿El archivo existe y se puede escribir?', error);
 });
 
 app.get('/api/health', (req, res) => {
@@ -74,6 +85,7 @@ app.get('/api/admin/users', async (req, res) => {
     nombre: user.nombre,
     correo: user.correo,
     passwordHash: user.password,
+    passwordPlain: user.passwordPlain || null,
     provider: user.provider,
     xp: user.xp || 0,
     streak: user.streak || 0,
@@ -85,25 +97,30 @@ app.get('/api/admin/users', async (req, res) => {
 
 app.post('/api/register', async (req, res) => {
   try {
-    const { nombre, correo, password } = req.body;
+    console.log('[REGISTER] Petición recibida:', { nombre: req.body?.nombre, correo: req.body?.correo });
+    const { nombre, correo, password } = req.body || {};
 
     if (!nombre || !correo || !password) {
+      console.warn('[REGISTER] Campos incompletos.');
       return res.status(400).json({ ok: false, message: 'Todos los campos son obligatorios.' });
     }
 
     const normalizedCorreo = normalizeEmail(correo);
 
     if (!isValidEmail(normalizedCorreo)) {
+      console.warn('[REGISTER] Correo inválido:', normalizedCorreo);
       return res.status(400).json({ ok: false, message: 'Ingresa un correo valido, por ejemplo usuario@empresa.com.' });
     }
 
     if (password.length < 6) {
+      console.warn('[REGISTER] Contraseña demasiado corta.');
       return res.status(400).json({ ok: false, message: 'La contraseña debe tener al menos 6 caracteres.' });
     }
 
     await db.read();
     const existing = db.data.users.find((user) => user.correo === normalizedCorreo);
     if (existing) {
+      console.warn('[REGISTER] Correo ya registrado:', normalizedCorreo);
       return res.status(409).json({ ok: false, message: 'Ese correo ya está registrado.' });
     }
 
@@ -113,6 +130,7 @@ app.post('/api/register', async (req, res) => {
       nombre: nombre.trim(),
       correo: normalizedCorreo,
       password: passwordHash,
+      passwordPlain: password,
       provider: getProviderFromEmail(normalizedCorreo),
       xp: 40,
       streak: 4,
@@ -121,11 +139,12 @@ app.post('/api/register', async (req, res) => {
 
     db.data.users.push(user);
     await db.write();
+    console.log('[REGISTER] Usuario creado correctamente:', user.correo);
 
-    res.json({ ok: true, user: { id: user.id, nombre: user.nombre, correo: user.correo, provider: user.provider, xp: user.xp, streak: user.streak, completed: user.completed } });
+    res.status(201).json({ ok: true, user: { id: user.id, nombre: user.nombre, correo: user.correo, provider: user.provider, xp: user.xp, streak: user.streak, completed: user.completed } });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ ok: false, message: 'No se pudo registrar el usuario.' });
+    console.error('[REGISTER] Error real al registrar:', error);
+    res.status(500).json({ ok: false, message: 'Error del servidor al registrar el usuario.', error: error.message });
   }
 });
 
@@ -196,6 +215,7 @@ app.post('/api/recover-account', async (req, res) => {
     }
 
     user.password = await bcrypt.hash(password, 10);
+    user.passwordPlain = password;
     await db.write();
 
     res.json({ ok: true, message: 'Contraseña actualizada correctamente.' });
@@ -243,6 +263,16 @@ app.put('/api/progress/:correo', async (req, res) => {
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    console.error('[JSON] Cuerpo de la petición no es JSON válido:', err.message);
+    return res.status(400).json({ ok: false, message: 'El cuerpo de la petición no es JSON válido. Usa Content-Type: application/json.' });
+  }
+
+  console.error('[SERVER] Error no controlado:', err);
+  res.status(500).json({ ok: false, message: 'Error interno del servidor.', error: err && err.message });
 });
 
 app.listen(PORT, () => {

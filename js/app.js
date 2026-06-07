@@ -18,13 +18,18 @@ let savedProgress = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{\"xp\":40
 let currentLesson = null;
 
 async function api(path, options = {}) {
-  const response = await fetch(`${API_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    ...options
-  });
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      ...options
+    });
 
-  const data = await response.json().catch(() => ({}));
-  return { ok: response.ok, status: response.status, data };
+    const data = await response.json().catch(() => ({}));
+    return { ok: response.ok, status: response.status, data };
+  } catch (error) {
+    console.error(`[API] Error de red en ${path}:`, error);
+    return { ok: false, status: 0, data: { message: 'No se pudo conectar con el servidor. Revisa que esté corriendo en localhost:3000.' }, networkError: error };
+  }
 }
 
 function updateProgressUI(progress = savedProgress) {
@@ -135,8 +140,17 @@ async function registerUser(event) {
   }
 
   const result = await api('/register', { method: 'POST', body: JSON.stringify({ nombre, correo, password }) });
+  console.log('[REGISTER] Respuesta del servidor:', result);
+
   if (!result.ok) {
-    Swal.fire({ title: "No se pudo registrar", text: result.data.message || 'Intenta nuevamente.', icon: 'error' });
+    if (result.status === 409) {
+      Swal.fire({ title: "Correo ya registrado", text: result.data.message || 'Ese correo ya tiene una cuenta. Inicia sesión.', icon: 'warning' });
+    } else if (result.status === 400) {
+      Swal.fire({ title: "Datos no válidos", text: result.data.message || 'Revisa los datos e intenta de nuevo.', icon: 'error' });
+    } else {
+      console.error('[REGISTER] Error del servidor:', result.data.error || result.data.message, result.networkError || '');
+      Swal.fire({ title: "Error del servidor", text: result.data.message || 'Ocurrió un error inesperado. Intenta nuevamente.', icon: 'error' });
+    }
     return;
   }
 
@@ -147,7 +161,7 @@ async function registerUser(event) {
   localStorage.setItem(PROGRESS_KEY, JSON.stringify(savedProgress));
 
   loadUserDashboard(savedUser, savedProgress);
-  Swal.fire({ title: `¡Bienvenido a Pangolingo, ${savedUser.nombre}!`, text: 'Tu cuenta quedó guardada en la base de datos.', icon: 'success' });
+  Swal.fire({ title: "Usuario creado", text: `¡Bienvenido a Pangolingo, ${savedUser.nombre}! Tu cuenta quedó guardada.`, icon: 'success' });
 }
 
 async function loginUser(event) {
@@ -178,8 +192,8 @@ async function loginUser(event) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(savedUser));
   localStorage.setItem(PROGRESS_KEY, JSON.stringify(savedProgress));
 
-  loadUserDashboard(savedUser, savedProgress);
-  Swal.fire({ title: "Sesión iniciada", text: `Bienvenido de nuevo, ${savedUser.nombre}.`, icon: "success" });
+  await Swal.fire({ title: "Sesión iniciada", text: `Bienvenido de nuevo, ${savedUser.nombre}.`, icon: "success", timer: 1200, showConfirmButton: false });
+  window.location.href = "inicio.html";
 }
 
 async function recoverAccount() {
