@@ -10,16 +10,17 @@
 </head>
 <body>
     <div class="app-shell">
+        <section class="landing-grid">
         <header class="hero-card card p-4 mb-4">
             <div>
                 <p class="eyebrow">App de inglés interactiva</p>
                 <h1>🐾 Pangolingo</h1>
                 <p class="lead">Una interfaz clara, bonita y fácil de usar para aprender inglés desde tu primera pantalla.</p>
             </div>
-            <div class="hero-badges">
-                <span class="badge-chip">+100 XP diario</span>
-                <span class="badge-chip">Racha de 7 días</span>
-                <span class="badge-chip">Modo Plus</span>
+            <div class="hero-side">
+                <div class="mascot-card" aria-label="Mascota representativa de Pangolingo">
+                    <img class="mascot-image" src="Img/pango.png" alt="Pangolingo mascota">
+                </div>
             </div>
         </header>
 
@@ -66,19 +67,21 @@
                         <input type="password" id="loginPassword" class="form-control" placeholder="Tu contraseña" required>
                     </div>
                     <button type="submit" id="btnLogin" class="btn btn-outline-light w-100">Iniciar sesión</button>
+                    <button type="button" id="forgotPasswordBtn" class="link-button mt-3">Olvidé mi contraseña</button>
                 </form>
             </section>
 
             <div id="welcomeMessage" class="mt-3 alert alert-success d-none"></div>
         </main>
+        </section>
 
         <section id="dashboardSection" class="d-none">
             <div class="dashboard-grid">
                 <section class="card p-4 panel stats-panel">
                     <div class="panel-header">
-                        <p class="eyebrow">Tu progreso</p>
+                        <p class="eyebrow">Tu ruta diaria</p>
                         <h2 id="userNameLabel">Aún no has comenzado</h2>
-                        <p id="userEmailLabel">Regístrate para guardar tu racha.</p>
+                        <p id="userEmailLabel">Regístrate para guardar tu racha y tus lecciones.</p>
                     </div>
 
                     <div class="stat-grid">
@@ -102,9 +105,9 @@
 
                 <section class="card p-4 panel lessons-panel">
                     <div class="panel-header">
-                        <p class="eyebrow">Lecciones</p>
-                        <h2>Elige una aventura</h2>
-                        <p>Practica frases básicas, comida, viajes y emociones con preguntas rápidas.</p>
+                        <p class="eyebrow">Lecciones diarias</p>
+                        <h2>Elige tu aventura</h2>
+                        <p>Practica frases básicas, comida, viajes y emociones con retos rápidos y XP.</p>
                     </div>
                     <div id="lessonList" class="lesson-grid"></div>
                 </section>
@@ -114,7 +117,7 @@
                 <div class="panel-header">
                     <p class="eyebrow">Práctica</p>
                     <h2>Pregunta en vivo</h2>
-                    <p>Selecciona la opción correcta y acumula XP.</p>
+                    <p>Elige la respuesta correcta y sube tu racha con cada ejercicio.</p>
                 </div>
                 <div id="practiceBox" class="practice-box">
                     <p id="practicePrompt">Elige una lección para comenzar.</p>
@@ -125,6 +128,7 @@
         </section>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script<script src="js/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>

@@ -182,6 +182,57 @@ async function loginUser(event) {
   Swal.fire({ title: "Sesión iniciada", text: `Bienvenido de nuevo, ${savedUser.nombre}.`, icon: "success" });
 }
 
+async function recoverAccount() {
+  const { value: formValues, isConfirmed } = await Swal.fire({
+    title: "Recuperar cuenta",
+    html: `
+      <input id="recoveryCorreo" class="swal2-input" type="email" placeholder="Correo Gmail registrado">
+      <input id="recoveryPassword" class="swal2-input" type="password" placeholder="Nueva contraseña">
+    `,
+    confirmButtonText: "Actualizar contraseña",
+    showCancelButton: true,
+    cancelButtonText: "Cancelar",
+    focusConfirm: false,
+    preConfirm: () => {
+      const correo = document.getElementById("recoveryCorreo").value.trim();
+      const password = document.getElementById("recoveryPassword").value.trim();
+
+      if (!correo || !password) {
+        Swal.showValidationMessage("Escribe tu correo y la nueva contraseña.");
+        return false;
+      }
+
+      if (!isGmail(correo)) {
+        Swal.showValidationMessage("El correo debe terminar en @gmail.com.");
+        return false;
+      }
+
+      if (password.length < 6) {
+        Swal.showValidationMessage("La nueva contraseña debe tener al menos 6 caracteres.");
+        return false;
+      }
+
+      return { correo, password };
+    }
+  });
+
+  if (!isConfirmed || !formValues) return;
+
+  const result = await api('/recover-account', {
+    method: 'POST',
+    body: JSON.stringify(formValues)
+  });
+
+  if (!result.ok) {
+    Swal.fire({ title: "No se pudo recuperar", text: result.data.message || "Revisa el correo e intenta nuevamente.", icon: "error" });
+    return;
+  }
+
+  document.getElementById("loginCorreo").value = formValues.correo;
+  document.getElementById("loginPassword").value = "";
+  Swal.fire({ title: "Cuenta recuperada", text: "Tu contraseña fue actualizada. Ya puedes iniciar sesión con la nueva clave.", icon: "success" });
+}
+
 async function restoreSession() {
   if (!savedUser) return;
   const progressResult = await api(`/progress/${encodeURIComponent(savedUser.correo)}`);
@@ -212,6 +263,7 @@ function init() {
 
   document.getElementById("registroForm").addEventListener("submit", registerUser);
   document.getElementById("loginForm").addEventListener("submit", loginUser);
+  document.getElementById("forgotPasswordBtn").addEventListener("click", recoverAccount);
   document.getElementById("lessonList").addEventListener("click", (event) => {
     const button = event.target.closest("[data-action='practice']");
     if (button) showPractice(button.dataset.id);

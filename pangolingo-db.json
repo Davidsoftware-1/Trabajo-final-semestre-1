@@ -23,6 +23,18 @@
       "completed": [
         1
       ]
+    },
+    {
+      "id": 1780799057705,
+      "nombre": "PruebaAuto",
+      "correo": "pruebaauto232026a5ca0f49bdad63e251d55e4cce@gmail.com",
+      "password": "$2a$10$xowyYGdgye6pbouvMEoULeeFTFsLj/GmvpacwIhT7FGiCO4coBqS.",
+      "provider": "Gmail",
+      "xp": 40,
+      "streak": 4,
+      "completed": [
+        1
+      ]
     }
   ]
 }

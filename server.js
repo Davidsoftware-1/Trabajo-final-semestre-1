@@ -116,6 +116,38 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+app.post('/api/recover-account', async (req, res) => {
+  try {
+    const { correo, password } = req.body;
+
+    if (!correo || !password) {
+      return res.status(400).json({ ok: false, message: 'Correo y nueva contraseña requeridos.' });
+    }
+
+    if (!isGmail(correo)) {
+      return res.status(400).json({ ok: false, message: 'Solo aceptamos correos @gmail.com.' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ ok: false, message: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+    }
+
+    await db.read();
+    const user = db.data.users.find((entry) => entry.correo === correo.toLowerCase());
+    if (!user) {
+      return res.status(404).json({ ok: false, message: 'No encontramos una cuenta con ese correo.' });
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    await db.write();
+
+    res.json({ ok: true, message: 'Contraseña actualizada correctamente.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ ok: false, message: 'No se pudo recuperar la cuenta.' });
+  }
+});
+
 app.get('/api/progress/:correo', async (req, res) => {
   const correo = decodeURIComponent(req.params.correo).toLowerCase();
   await db.read();
