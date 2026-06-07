@@ -192,8 +192,8 @@ async function loginUser(event) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(savedUser));
   localStorage.setItem(PROGRESS_KEY, JSON.stringify(savedProgress));
 
-  loadUserDashboard(savedUser, savedProgress);
-  Swal.fire({ title: "Sesión iniciada", text: `Bienvenido de nuevo, ${savedUser.nombre}.`, icon: "success" });
+  await Swal.fire({ title: "Sesión iniciada", text: `Bienvenido de nuevo, ${savedUser.nombre}.`, icon: "success", timer: 1200, showConfirmButton: false });
+  window.location.href = "inicio.html";
 }
 
 async function recoverAccount() {
