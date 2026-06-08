@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pangolingo | App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-shell">
+        <div id="mainContent">
+            <!-- Traductor -->
+            <section id="translatorMode" class="mode-section active card p-4">
+                <div class="panel-header">
+                    <p class="eyebrow">Traductor</p>
+                    <h2>Diccionario Bilingüe</h2>
+                    <p>Busca palabras en inglés o español y encuentra su traducción.</p>
+                </div>
+                <div class="translator-box mt-4">
+                    <div class="mb-3">
+                        <label class="form-label">Dirección de traducción:</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="translationDirection" id="enToEs" value="enToEs" checked>
+                            <label class="btn btn-outline-primary" for="enToEs">Inglés → Español</label>
+                            <input type="radio" class="btn-check" name="translationDirection" id="esToEn" value="esToEn">
+                            <label class="btn btn-outline-primary" for="esToEn">Español → Inglés</label>
+                        </div>
+                    </div>
+                    <div class="input-group mb-3">
+                        <label for="searchWord" class="visually-hidden">Buscar palabra</label>
+                        <input type="text" id="searchWord" class="form-control" placeholder="Escribe una palabra..." aria-label="Buscar palabra">
+                        <button id="searchBtn" class="btn btn-primary">Buscar</button>
+                    </div>
+                    <div id="searchResult" class="mt-3 p-3 search-result"></div>
+                    <div id="wordNotFound" class="mt-3 p-3 word-not-found"></div>
+                </div>
+            </section>
+
+            <!-- Retos -->
+            <section id="challengesMode" class="mode-section card p-4">
+                <div class="panel-header">
+                    <p class="eyebrow">Retos</p>
+                    <h2>Desafíos diarios</h2>
+                    <p>Completa retos para ganar XP extra.</p>
+                </div>
+                <div class="challenges-list mt-4">
+                    <div class="challenge-item p-3 mb-3">
+                        <h4>Reto del día</h4>
+                        <p>Responde 5 preguntas correctamente</p>
+                        <button class="btn btn-primary btn-sm mt-2">Comenzar</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chat -->
+            <section id="chatMode" class="mode-section card p-4">
+                <div class="panel-header">
+                    <p class="eyebrow">Chat</p>
+                    <h2>Chat con otros</h2>
+                    <p>Practica inglés hablando con personas de todo el mundo.</p>
+                </div>
+                <div class="chat-container mt-4">
+                    <div id="chatMessages" class="chat-messages mb-3"></div>
+                    <div class="chat-input">
+                        <label for="chatInput" class="visually-hidden">Mensaje</label>
+                        <input type="text" id="chatInput" class="form-control" placeholder="Escribe un mensaje..." aria-label="Mensaje">
+                        <button id="sendChatBtn" class="btn btn-primary mt-2">Enviar</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Speaking -->
+            <section id="speakingMode" class="mode-section card p-4">
+                <div class="panel-header">
+                    <p class="eyebrow">Speaking</p>
+                    <h2>Practica speaking</h2>
+                    <p>Conversaciones cortas para mejorar tu pronunciación.</p>
+                </div>
+                <div class="speaking-container mt-4">
+                    <div class="speaking-scenario p-3 mb-3">
+                        <h4>Escenario: En el restaurante</h4>
+                        <p>Tú: "I would like to order..."</p>
+                        <button class="btn btn-primary btn-sm mt-2">Grabar respuesta</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Historia -->
+            <section id="storyMode" class="mode-section card p-4">
+                <div class="panel-header">
+                    <p class="eyebrow">Historia</p>
+                    <h2>Modo historia</h2>
+                    <p>Lee historias y cuentos en inglés para practicar.</p>
+                </div>
+                <div class="story-container mt-4">
+                    <div class="story-item p-3 mb-3">
+                        <h4>The Little Prince</h4>
+                        <p>Una historia clásica para principiantes.</p>
+                        <button class="btn btn-primary btn-sm mt-2">Leer</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Configuración -->
+            <section id="settingsMode" class="mode-section card p-4">
+                <div class="panel-header">
+                    <p class="eyebrow">Configuración</p>
+                    <h2>Ajustes</h2>
+                    <p>Personaliza tu experiencia.</p>
+                </div>
+                <div class="settings-container mt-4">
+                    <div class="setting-item mb-3">
+                        <label for="settingsName" class="form-label">Nombre</label>
+                        <input type="text" id="settingsName" class="form-control" placeholder="Tu nombre" aria-label="Nombre">
+                    </div>
+                    <div class="setting-item mb-3">
+                        <label for="settingsEmail" class="form-label">Correo</label>
+                        <input type="email" id="settingsEmail" class="form-control" disabled placeholder="tu@correo.com" aria-label="Correo">
+                    </div>
+                    <button id="logoutBtn" class="btn btn-outline-light w-100 mt-3">Cerrar sesión</button>
+                </div>
+            </section>
+        </div>
+
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-mode="translator">
+                <i class="fas fa-language"></i>
+                <span>Traductor</span>
+            </button>
+            <button class="nav-item" data-mode="challenges">
+                <i class="fas fa-trophy"></i>
+                <span>Retos</span>
+            </button>
+            <button class="nav-item" data-mode="chat">
+                <i class="fas fa-comments"></i>
+                <span>Chat</span>
+            </button>
+            <button class="nav-item" data-mode="speaking">
+                <i class="fas fa-microphone"></i>
+                <span>Speaking</span>
+            </button>
+            <button class="nav-item" data-mode="story">
+                <i class="fas fa-book-open"></i>
+                <span>Historia</span>
+            </button>
+            <button class="nav-item" data-mode="settings">
+                <i class="fas fa-cog"></i>
+                <span>Config</span>
+            </button>
+        </nav>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/dictionary.js"></script>
+    <script src="js/app-main.js"></script>
+</body>
+</html>

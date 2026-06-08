@@ -42,15 +42,15 @@
                 <form id="registroForm" class="needs-validation" novalidate>
                     <div class="mb-3">
                         <label for="nombreJugador" class="form-label">Nombre</label>
-                        <input type="text" id="nombreJugador" class="form-control" placeholder="Ej. Camila" required>
+                        <input type="text" id="nombreJugador" class="form-control" placeholder="Ej. Camila" required aria-label="Nombre completo">
                     </div>
                     <div class="mb-3">
                         <label for="correoJugador" class="form-label">Correo Gmail</label>
-                        <input type="email" id="correoJugador" class="form-control" placeholder="tuusuario@gmail.com" required>
+                        <input type="email" id="correoJugador" class="form-control" placeholder="tuusuario@gmail.com" required aria-label="Correo electrónico">
                     </div>
                     <div class="mb-3">
                         <label for="passwordJugador" class="form-label">Contraseña</label>
-                        <input type="password" id="passwordJugador" class="form-control" placeholder="Mínimo 6 caracteres" required>
+                        <input type="password" id="passwordJugador" class="form-control" placeholder="Mínimo 6 caracteres" required aria-label="Contraseña">
                     </div>
                     <button type="submit" id="btnRegistro" class="btn btn-primary w-100">Registrarme</button>
                 </form>
@@ -60,11 +60,11 @@
                 <form id="loginForm" class="needs-validation" novalidate>
                     <div class="mb-3">
                         <label for="loginCorreo" class="form-label">Correo Gmail</label>
-                        <input type="email" id="loginCorreo" class="form-control" placeholder="tuusuario@gmail.com" required>
+                        <input type="email" id="loginCorreo" class="form-control" placeholder="tuusuario@gmail.com" required aria-label="Correo electrónico">
                     </div>
                     <div class="mb-3">
                         <label for="loginPassword" class="form-label">Contraseña</label>
-                        <input type="password" id="loginPassword" class="form-control" placeholder="Tu contraseña" required>
+                        <input type="password" id="loginPassword" class="form-control" placeholder="Tu contraseña" required aria-label="Contraseña">
                     </div>
                     <button type="submit" id="btnLogin" class="btn btn-outline-light w-100">Iniciar sesión</button>
                 </form>

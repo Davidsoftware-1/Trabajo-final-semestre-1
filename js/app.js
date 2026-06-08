@@ -140,8 +140,7 @@ async function registerUser(event) {
   }
 
   const result = await api('/register', { method: 'POST', body: JSON.stringify({ nombre, correo, password }) });
-  console.log('[REGISTER] Respuesta del servidor:', result);
-
+  console.log('Respuesta del servidor:', result);
   if (!result.ok) {
     if (result.status === 409) {
       Swal.fire({ title: "Correo ya registrado", text: result.data.message || 'Ese correo ya tiene una cuenta. Inicia sesión.', icon: 'warning' });
@@ -160,8 +159,7 @@ async function registerUser(event) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(savedUser));
   localStorage.setItem(PROGRESS_KEY, JSON.stringify(savedProgress));
 
-  loadUserDashboard(savedUser, savedProgress);
-  Swal.fire({ title: "Usuario creado", text: `¡Bienvenido a Pangolingo, ${savedUser.nombre}! Tu cuenta quedó guardada.`, icon: 'success' });
+  window.location.href = 'app.html';
 }
 
 async function loginUser(event) {
@@ -192,8 +190,7 @@ async function loginUser(event) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(savedUser));
   localStorage.setItem(PROGRESS_KEY, JSON.stringify(savedProgress));
 
-  await Swal.fire({ title: "Sesión iniciada", text: `Bienvenido de nuevo, ${savedUser.nombre}.`, icon: "success", timer: 1200, showConfirmButton: false });
-  window.location.href = "inicio.html";
+  window.location.href = 'app.html';
 }
 
 async function recoverAccount() {

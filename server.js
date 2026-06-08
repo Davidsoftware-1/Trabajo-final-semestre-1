@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const bcrypt = require('bcryptjs');
 const { Low } = require('lowdb');
 const { JSONFile } = require('lowdb/node');
 
@@ -84,8 +83,7 @@ app.get('/api/admin/users', async (req, res) => {
     id: user.id,
     nombre: user.nombre,
     correo: user.correo,
-    passwordHash: user.password,
-    passwordPlain: user.passwordPlain || null,
+    password: user.password,
     provider: user.provider,
     xp: user.xp || 0,
     streak: user.streak || 0,
@@ -97,8 +95,8 @@ app.get('/api/admin/users', async (req, res) => {
 
 app.post('/api/register', async (req, res) => {
   try {
-    console.log('[REGISTER] Petición recibida:', { nombre: req.body?.nombre, correo: req.body?.correo });
-    const { nombre, correo, password } = req.body || {};
+    console.log('Datos recibidos:', req.body);
+    const { nombre, correo, password } = req.body;
 
     if (!nombre || !correo || !password) {
       console.warn('[REGISTER] Campos incompletos.');
@@ -106,6 +104,7 @@ app.post('/api/register', async (req, res) => {
     }
 
     const normalizedCorreo = normalizeEmail(correo);
+    console.log('Correo normalizado:', normalizedCorreo);
 
     if (!isValidEmail(normalizedCorreo)) {
       console.warn('[REGISTER] Correo inválido:', normalizedCorreo);
@@ -117,34 +116,36 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ ok: false, message: 'La contraseña debe tener al menos 6 caracteres.' });
     }
 
+    console.log('Leyendo base de datos...');
     await db.read();
+    console.log('Base de datos leída:', db.data);
     const existing = db.data.users.find((user) => user.correo === normalizedCorreo);
     if (existing) {
       console.warn('[REGISTER] Correo ya registrado:', normalizedCorreo);
       return res.status(409).json({ ok: false, message: 'Ese correo ya está registrado.' });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
     const user = {
       id: Date.now(),
       nombre: nombre.trim(),
       correo: normalizedCorreo,
-      password: passwordHash,
-      passwordPlain: password,
+      password: password,
       provider: getProviderFromEmail(normalizedCorreo),
       xp: 40,
       streak: 4,
       completed: [1]
     };
 
+    console.log('Usuario a crear:', user);
     db.data.users.push(user);
+    console.log('Escribiendo en base de datos...');
     await db.write();
-    console.log('[REGISTER] Usuario creado correctamente:', user.correo);
+    console.log('Usuario guardado exitosamente');
 
     res.status(201).json({ ok: true, user: { id: user.id, nombre: user.nombre, correo: user.correo, provider: user.provider, xp: user.xp, streak: user.streak, completed: user.completed } });
   } catch (error) {
-    console.error('[REGISTER] Error real al registrar:', error);
-    res.status(500).json({ ok: false, message: 'Error del servidor al registrar el usuario.', error: error.message });
+    console.error('Error en registro:', error);
+    res.status(500).json({ ok: false, message: 'No se pudo registrar el usuario.' });
   }
 });
 
@@ -168,8 +169,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ ok: false, message: 'Usuario no encontrado.' });
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
+    if (password !== user.password) {
       return res.status(401).json({ ok: false, message: 'Contraseña incorrecta.' });
     }
 
@@ -214,8 +214,7 @@ app.post('/api/recover-account', async (req, res) => {
       return res.status(404).json({ ok: false, message: 'No encontramos una cuenta con ese correo.' });
     }
 
-    user.password = await bcrypt.hash(password, 10);
-    user.passwordPlain = password;
+    user.password = password;
     await db.write();
 
     res.json({ ok: true, message: 'Contraseña actualizada correctamente.' });
