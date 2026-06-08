@@ -159,7 +159,7 @@ async function registerUser(event) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(savedUser));
   localStorage.setItem(PROGRESS_KEY, JSON.stringify(savedProgress));
 
-  window.location.href = 'app.html';
+  window.location.href = 'inicio.html';
 }
 
 async function loginUser(event) {
@@ -190,7 +190,7 @@ async function loginUser(event) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(savedUser));
   localStorage.setItem(PROGRESS_KEY, JSON.stringify(savedProgress));
 
-  window.location.href = 'app.html';
+  window.location.href = 'inicio.html';
 }
 
 async function recoverAccount() {

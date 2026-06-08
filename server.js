@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const { Low } = require('lowdb');
@@ -8,7 +9,59 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_KEY = process.env.ADMIN_KEY || 'pangolingo-admin';
 const dbFile = path.join(__dirname, 'pangolingo-db.json');
 const adapter = new JSONFile(dbFile);
-const db = new Low(adapter, { users: [] });
+const db = new Low(adapter, { users: [], messages: [] });
+
+function createDefaultAcademicProgress(level = null) {
+  const currentLevel = level || 'A1';
+  return {
+    assignedLevel: level,
+    diagnosticCompleted: Boolean(level),
+    currentLevel,
+    currentUnit: `${currentLevel}-U1`,
+    academicProgress: {
+      completedUnits: [],
+      completedQuizzes: [],
+      passedExams: [],
+      scores: {}
+    }
+  };
+}
+
+function normalizeUserProgress(user) {
+  const defaults = createDefaultAcademicProgress(user.assignedLevel || user.currentLevel || null);
+  user.xp = Number(user.xp) || 40;
+  user.streak = Number(user.streak) || 4;
+  user.completed = Array.isArray(user.completed) ? user.completed : [];
+  user.assignedLevel = user.assignedLevel || defaults.assignedLevel || 'A1';
+  user.diagnosticCompleted = typeof user.diagnosticCompleted === 'boolean' ? user.diagnosticCompleted : true;
+  user.currentLevel = user.currentLevel || defaults.currentLevel;
+  user.currentUnit = user.currentUnit || defaults.currentUnit;
+  user.academicProgress = {
+    ...defaults.academicProgress,
+    ...(user.academicProgress || {})
+  };
+  user.academicProgress.completedUnits = Array.isArray(user.academicProgress.completedUnits)
+    ? user.academicProgress.completedUnits
+    : user.completed;
+  user.academicProgress.completedQuizzes = Array.isArray(user.academicProgress.completedQuizzes) ? user.academicProgress.completedQuizzes : [];
+  user.academicProgress.passedExams = Array.isArray(user.academicProgress.passedExams) ? user.academicProgress.passedExams : [];
+  user.academicProgress.scores = user.academicProgress.scores && typeof user.academicProgress.scores === 'object' ? user.academicProgress.scores : {};
+  return user;
+}
+
+function serializeProgress(user) {
+  const normalized = normalizeUserProgress(user);
+  return {
+    xp: normalized.xp,
+    streak: normalized.streak,
+    completed: normalized.completed,
+    assignedLevel: normalized.assignedLevel,
+    diagnosticCompleted: normalized.diagnosticCompleted,
+    currentLevel: normalized.currentLevel,
+    currentUnit: normalized.currentUnit,
+    academicProgress: normalized.academicProgress
+  };
+}
 
 app.use(express.json());
 
@@ -56,7 +109,9 @@ function getProviderFromEmail(email) {
 
 async function initDb() {
   await db.read();
-  db.data ||= { users: [] };
+  db.data ||= { users: [], messages: [] };
+  db.data.users ||= [];
+  db.data.messages ||= [];
   await db.write();
   console.log(`[DB] Base de datos lista (${dbFile}). Usuarios: ${db.data.users.length}`);
 }
@@ -85,9 +140,7 @@ app.get('/api/admin/users', async (req, res) => {
     correo: user.correo,
     password: user.password,
     provider: user.provider,
-    xp: user.xp || 0,
-    streak: user.streak || 0,
-    completed: Array.isArray(user.completed) ? user.completed : []
+    ...serializeProgress(user)
   }));
 
   res.json({ ok: true, total: users.length, users });
@@ -133,7 +186,10 @@ app.post('/api/register', async (req, res) => {
       provider: getProviderFromEmail(normalizedCorreo),
       xp: 40,
       streak: 4,
-      completed: [1]
+      completed: [],
+      ...createDefaultAcademicProgress(null),
+      assignedLevel: null,
+      diagnosticCompleted: false
     };
 
     console.log('Usuario a crear:', user);
@@ -142,7 +198,7 @@ app.post('/api/register', async (req, res) => {
     await db.write();
     console.log('Usuario guardado exitosamente');
 
-    res.status(201).json({ ok: true, user: { id: user.id, nombre: user.nombre, correo: user.correo, provider: user.provider, xp: user.xp, streak: user.streak, completed: user.completed } });
+    res.status(201).json({ ok: true, user: { id: user.id, nombre: user.nombre, correo: user.correo, provider: user.provider, ...serializeProgress(user) } });
   } catch (error) {
     console.error('Error en registro:', error);
     res.status(500).json({ ok: false, message: 'No se pudo registrar el usuario.' });
@@ -178,9 +234,7 @@ app.post('/api/login', async (req, res) => {
       nombre: user.nombre,
       correo: user.correo,
       provider: user.provider,
-      xp: user.xp,
-      streak: user.streak,
-      completed: Array.isArray(user.completed) ? user.completed : [1]
+      ...serializeProgress(user)
     };
 
     res.json({ ok: true, user: safeUser });
@@ -233,17 +287,12 @@ app.get('/api/progress/:correo', async (req, res) => {
     return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
   }
 
-  res.json({
-    ok: true,
-    xp: user.xp || 40,
-    streak: user.streak || 4,
-    completed: Array.isArray(user.completed) ? user.completed : [1]
-  });
+  res.json({ ok: true, ...serializeProgress(user) });
 });
 
 app.put('/api/progress/:correo', async (req, res) => {
   const correo = decodeURIComponent(req.params.correo).toLowerCase();
-  const { xp, streak, completed } = req.body;
+  const { xp, streak, completed, assignedLevel, diagnosticCompleted, currentLevel, currentUnit, academicProgress } = req.body;
 
   await db.read();
   const user = db.data.users.find((entry) => entry.correo === correo);
@@ -253,15 +302,189 @@ app.put('/api/progress/:correo', async (req, res) => {
 
   user.xp = Number(xp) || 0;
   user.streak = Number(streak) || 0;
-  user.completed = Array.isArray(completed) ? completed : [1];
+  user.completed = Array.isArray(completed) ? completed : [];
+  user.assignedLevel = assignedLevel || user.assignedLevel || null;
+  user.diagnosticCompleted = typeof diagnosticCompleted === 'boolean' ? diagnosticCompleted : user.diagnosticCompleted;
+  user.currentLevel = currentLevel || user.currentLevel || user.assignedLevel || 'A1';
+  user.currentUnit = currentUnit || user.currentUnit || `${user.currentLevel}-U1`;
+  user.academicProgress = {
+    ...(user.academicProgress || createDefaultAcademicProgress(user.assignedLevel).academicProgress),
+    ...(academicProgress || {})
+  };
+  normalizeUserProgress(user);
 
   await db.write();
 
   res.json({ ok: true, message: 'Progreso guardado en la base de datos.' });
 });
 
+app.post('/api/presence', async (req, res) => {
+  const correo = normalizeEmail(req.body && req.body.correo);
+  if (!correo) {
+    return res.status(400).json({ ok: false, message: 'Correo requerido.' });
+  }
+
+  await db.read();
+  const user = db.data.users.find((entry) => entry.correo === correo);
+  if (!user) {
+    return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
+  }
+
+  user.lastSeen = Date.now();
+  await db.write();
+  res.json({ ok: true });
+});
+
+app.get('/api/chat/users', async (req, res) => {
+  await db.read();
+  const now = Date.now();
+  const users = db.data.users.map((user) => ({
+    nombre: user.nombre,
+    correo: user.correo,
+    online: Boolean(user.lastSeen && now - user.lastSeen < 45000)
+  }));
+  res.json({ ok: true, users });
+});
+
+app.get('/api/chat/messages', async (req, res) => {
+  const user = normalizeEmail(req.query.user);
+  const peer = normalizeEmail(req.query.peer);
+  await db.read();
+  const messages = (db.data.messages || []).filter((message) => {
+    if (peer) {
+      return message.type === 'private' && (
+        (message.from === user && message.to === peer) ||
+        (message.from === peer && message.to === user)
+      );
+    }
+    return message.type === 'global';
+  }).slice(-100);
+
+  res.json({ ok: true, messages });
+});
+
+app.post('/api/chat/messages', async (req, res) => {
+  const from = normalizeEmail(req.body && req.body.from);
+  const to = normalizeEmail(req.body && req.body.to);
+  const text = String((req.body && req.body.text) || '').trim();
+  const type = to ? 'private' : 'global';
+
+  if (!from || !text) {
+    return res.status(400).json({ ok: false, message: 'Remitente y mensaje requeridos.' });
+  }
+
+  await db.read();
+  const sender = db.data.users.find((user) => user.correo === from);
+  if (!sender) {
+    return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
+  }
+
+  const message = {
+    id: Date.now(),
+    type,
+    from,
+    fromName: sender.nombre,
+    to: to || null,
+    text: text.slice(0, 600),
+    createdAt: new Date().toISOString()
+  };
+  db.data.messages ||= [];
+  db.data.messages.push(message);
+  await db.write();
+  res.status(201).json({ ok: true, message });
+});
+
+app.post('/api/speaking', async (req, res) => {
+  const correo = normalizeEmail(req.body && req.body.correo);
+  const text = String((req.body && req.body.text) || '').trim();
+  const level = String((req.body && req.body.level) || 'A1').toUpperCase();
+
+  if (!correo || !text) {
+    return res.status(400).json({ ok: false, message: 'Correo y texto requeridos.' });
+  }
+
+  await db.read();
+  const user = db.data.users.find((entry) => entry.correo === correo);
+  if (!user) {
+    return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
+  }
+
+  const lower = text.toLowerCase();
+  const correction = lower.includes('i am') || lower.includes("i'm")
+    ? 'Your sentence has a clear subject and verb.'
+    : 'Try adding a clear subject and verb, for example: I am learning English.';
+  const reply = {
+    id: Date.now(),
+    userText: text,
+    botText: `${level} practice: ${correction} A natural reply is: "That sounds interesting. Can you tell me more?"`,
+    level,
+    createdAt: new Date().toISOString()
+  };
+
+  user.speakingHistory = Array.isArray(user.speakingHistory) ? user.speakingHistory : [];
+  user.speakingHistory.push(reply);
+  await db.write();
+  res.json({ ok: true, reply });
+});
+
+app.get('/api/speaking/:correo', async (req, res) => {
+  const correo = normalizeEmail(decodeURIComponent(req.params.correo));
+  await db.read();
+  const user = db.data.users.find((entry) => entry.correo === correo);
+  if (!user) {
+    return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
+  }
+  res.json({ ok: true, history: Array.isArray(user.speakingHistory) ? user.speakingHistory : [] });
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// --- LibreTranslate route ---
+// POST /api/translate
+// Body: { text: string, target: 'es'|'en'|..., source?: 'en'|'es'|... }
+// Optional: set TRANSLATE_URL if you want to use a self-hosted LibreTranslate instance.
+app.post('/api/translate', async (req, res) => {
+  try {
+    const { text, target, source } = req.body || {};
+    if (!text || !target) {
+      return res.status(400).json({ ok: false, message: 'Se requieren campos "text" y "target".' });
+    }
+
+    const translateUrl = process.env.TRANSLATE_URL || 'https://libretranslate.com/translate';
+    const apiKey = process.env.TRANSLATE_API_KEY;
+    const body = {
+      q: String(text),
+      source: source ? String(source) : 'auto',
+      target: String(target),
+      format: 'text'
+    };
+
+    if (apiKey) {
+      body.api_key = apiKey;
+    }
+
+    const response = await fetch(translateUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.error('[TRANSLATE] LibreTranslate returned error', data);
+      return res.status(response.status).json({ ok: false, message: data.error || 'Error en LibreTranslate.' });
+    }
+
+    const translated = data.translatedText || '';
+    res.json({ ok: true, translated });
+  } catch (err) {
+    console.error('[TRANSLATE] Error:', err);
+    res.status(500).json({ ok: false, message: 'Error en la traducción.', error: err && err.message });
+  }
 });
 
 app.use((err, req, res, next) => {

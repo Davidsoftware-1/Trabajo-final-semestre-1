@@ -11,21 +11,20 @@
 <body>
     <div class="app-shell">
         <div id="mainContent">
-            <!-- Traductor -->
             <section id="translatorMode" class="mode-section active card p-4">
                 <div class="panel-header">
                     <p class="eyebrow">Traductor</p>
-                    <h2>Diccionario Bilingüe</h2>
-                    <p>Busca palabras en inglés o español y encuentra su traducción.</p>
+                    <h2>Diccionario bilingue</h2>
+                    <p>Busca palabras en ingles o espanol y encuentra su traduccion.</p>
                 </div>
                 <div class="translator-box mt-4">
                     <div class="mb-3">
-                        <label class="form-label">Dirección de traducción:</label>
+                        <label class="form-label">Direccion de traduccion:</label>
                         <div class="btn-group w-100" role="group">
                             <input type="radio" class="btn-check" name="translationDirection" id="enToEs" value="enToEs" checked>
-                            <label class="btn btn-outline-primary" for="enToEs">Inglés → Español</label>
+                            <label class="btn btn-outline-primary" for="enToEs">Ingles a Espanol</label>
                             <input type="radio" class="btn-check" name="translationDirection" id="esToEn" value="esToEn">
-                            <label class="btn btn-outline-primary" for="esToEn">Español → Inglés</label>
+                            <label class="btn btn-outline-primary" for="esToEn">Espanol a Ingles</label>
                         </div>
                     </div>
                     <div class="input-group mb-3">
@@ -38,75 +37,80 @@
                 </div>
             </section>
 
-            <!-- Retos -->
+            <section id="learnMode" class="mode-section card p-4">
+                <div class="panel-header">
+                    <p class="eyebrow">Ruta academica</p>
+                    <h2>Dashboard CEFR</h2>
+                    <p>Continua tus unidades, quizzes, repasos y examenes.</p>
+                </div>
+                <a class="btn btn-primary" href="inicio.html">Abrir dashboard</a>
+            </section>
+
             <section id="challengesMode" class="mode-section card p-4">
                 <div class="panel-header">
                     <p class="eyebrow">Retos</p>
-                    <h2>Desafíos diarios</h2>
-                    <p>Completa retos para ganar XP extra.</p>
+                    <h2>Desafios diarios</h2>
+                    <p>Completa retos validados para ganar XP extra.</p>
                 </div>
-                <div class="challenges-list mt-4">
-                    <div class="challenge-item p-3 mb-3">
-                        <h4>Reto del día</h4>
-                        <p>Responde 5 preguntas correctamente</p>
-                        <button class="btn btn-primary btn-sm mt-2">Comenzar</button>
-                    </div>
+                <div class="challenge-item p-3 mt-4">
+                    <h4>Reto del dia</h4>
+                    <p>Completa una unidad del dashboard academico para sumar progreso real.</p>
+                    <a class="btn btn-primary btn-sm mt-2" href="inicio.html">Ir a unidades</a>
                 </div>
             </section>
 
-            <!-- Chat -->
             <section id="chatMode" class="mode-section card p-4">
                 <div class="panel-header">
                     <p class="eyebrow">Chat</p>
-                    <h2>Chat con otros</h2>
-                    <p>Practica inglés hablando con personas de todo el mundo.</p>
+                    <h2>Chat global y privado</h2>
+                    <p>Practica ingles con usuarios conectados y guarda el historial.</p>
                 </div>
-                <div class="chat-container mt-4">
-                    <div id="chatMessages" class="chat-messages mb-3"></div>
-                    <div class="chat-input">
-                        <label for="chatInput" class="visually-hidden">Mensaje</label>
-                        <input type="text" id="chatInput" class="form-control" placeholder="Escribe un mensaje..." aria-label="Mensaje">
-                        <button id="sendChatBtn" class="btn btn-primary mt-2">Enviar</button>
+                <div class="chat-layout mt-4">
+                    <aside class="chat-users">
+                        <button id="globalChatBtn" class="chat-user active" data-peer="">Chat global</button>
+                        <div id="chatUsers"></div>
+                    </aside>
+                    <div class="chat-room">
+                        <div id="chatMessages" class="chat-messages mb-3"></div>
+                        <div class="chat-input-row">
+                            <label for="chatInput" class="visually-hidden">Mensaje</label>
+                            <input type="text" id="chatInput" class="form-control" placeholder="Escribe un mensaje..." aria-label="Mensaje">
+                            <button id="sendChatBtn" class="btn btn-primary">Enviar</button>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Speaking -->
             <section id="speakingMode" class="mode-section card p-4">
                 <div class="panel-header">
                     <p class="eyebrow">Speaking</p>
-                    <h2>Practica speaking</h2>
-                    <p>Conversaciones cortas para mejorar tu pronunciación.</p>
+                    <h2>Simulador conversacional</h2>
+                    <p>Conversa en ingles con un asistente virtual que corrige y adapta el nivel.</p>
                 </div>
-                <div class="speaking-container mt-4">
-                    <div class="speaking-scenario p-3 mb-3">
-                        <h4>Escenario: En el restaurante</h4>
-                        <p>Tú: "I would like to order..."</p>
-                        <button class="btn btn-primary btn-sm mt-2">Grabar respuesta</button>
+                <div class="speaking-chat mt-4">
+                    <div id="speakingMessages" class="speaking-messages"></div>
+                    <div id="typingIndicator" class="typing-indicator d-none">El asistente esta escribiendo...</div>
+                    <div class="chat-input-row mt-3">
+                        <input id="speakingInput" class="form-control" placeholder="Write your answer in English...">
+                        <button id="sendSpeakingBtn" class="btn btn-primary">Enviar</button>
                     </div>
                 </div>
             </section>
 
-            <!-- Historia -->
             <section id="storyMode" class="mode-section card p-4">
                 <div class="panel-header">
-                    <p class="eyebrow">Historia</p>
-                    <h2>Modo historia</h2>
-                    <p>Lee historias y cuentos en inglés para practicar.</p>
+                    <p class="eyebrow">Biblioteca</p>
+                    <h2>Lecturas por nivel</h2>
+                    <p>Textos graduados con vocabulario, preguntas, puntuacion y XP.</p>
                 </div>
-                <div class="story-container mt-4">
-                    <div class="story-item p-3 mb-3">
-                        <h4>The Little Prince</h4>
-                        <p>Una historia clásica para principiantes.</p>
-                        <button class="btn btn-primary btn-sm mt-2">Leer</button>
-                    </div>
-                </div>
+                <div id="readingFilters" class="level-tabs mt-4"></div>
+                <div id="readingLibrary" class="reading-library mt-3"></div>
+                <div id="readingDetail" class="reading-detail mt-3"></div>
             </section>
 
-            <!-- Configuración -->
             <section id="settingsMode" class="mode-section card p-4">
                 <div class="panel-header">
-                    <p class="eyebrow">Configuración</p>
+                    <p class="eyebrow">Configuracion</p>
                     <h2>Ajustes</h2>
                     <p>Personaliza tu experiencia.</p>
                 </div>
@@ -119,41 +123,26 @@
                         <label for="settingsEmail" class="form-label">Correo</label>
                         <input type="email" id="settingsEmail" class="form-control" disabled placeholder="tu@correo.com" aria-label="Correo">
                     </div>
-                    <button id="logoutBtn" class="btn btn-outline-light w-100 mt-3">Cerrar sesión</button>
+                    <button id="resetDiagnosticBtn" class="btn btn-outline-light w-100 mt-3">Reiniciar diagnostico</button>
+                    <button id="logoutBtn" class="btn btn-outline-light w-100 mt-2">Cerrar sesion</button>
                 </div>
             </section>
         </div>
 
         <nav class="bottom-nav">
-            <button class="nav-item active" data-mode="translator">
-                <i class="fas fa-language"></i>
-                <span>Traductor</span>
-            </button>
-            <button class="nav-item" data-mode="challenges">
-                <i class="fas fa-trophy"></i>
-                <span>Retos</span>
-            </button>
-            <button class="nav-item" data-mode="chat">
-                <i class="fas fa-comments"></i>
-                <span>Chat</span>
-            </button>
-            <button class="nav-item" data-mode="speaking">
-                <i class="fas fa-microphone"></i>
-                <span>Speaking</span>
-            </button>
-            <button class="nav-item" data-mode="story">
-                <i class="fas fa-book-open"></i>
-                <span>Historia</span>
-            </button>
-            <button class="nav-item" data-mode="settings">
-                <i class="fas fa-cog"></i>
-                <span>Config</span>
-            </button>
+            <button class="nav-item active" data-mode="translator"><i class="fas fa-language"></i><span>Traductor</span></button>
+            <button class="nav-item" data-mode="learn"><i class="fas fa-graduation-cap"></i><span>Ruta</span></button>
+            <button class="nav-item" data-mode="challenges"><i class="fas fa-trophy"></i><span>Retos</span></button>
+            <button class="nav-item" data-mode="chat"><i class="fas fa-comments"></i><span>Chat</span></button>
+            <button class="nav-item" data-mode="speaking"><i class="fas fa-microphone"></i><span>Speaking</span></button>
+            <button class="nav-item" data-mode="story"><i class="fas fa-book-open"></i><span>Biblioteca</span></button>
+            <button class="nav-item" data-mode="settings"><i class="fas fa-cog"></i><span>Config</span></button>
         </nav>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/dictionary.js"></script>
+    <script src="js/reading-library.js"></script>
     <script src="js/app-main.js"></script>
 </body>
 </html>

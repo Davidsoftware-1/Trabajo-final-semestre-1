@@ -5,72 +5,108 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pangolingo | Inicio</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            margin: 0;
-            min-height: 100vh;
-            background: #ffffff;
-            color: #111111;
-            font-family: Arial, Helvetica, sans-serif;
-        }
-
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 22px;
-            border-bottom: 1px solid #e5e5e5;
-        }
-
-        .topbar .brand {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 700;
-            font-size: 1.2rem;
-        }
-
-        .topbar .user-info {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            font-size: 0.95rem;
-        }
-
-        #contenido {
-            padding: 24px 22px;
-        }
-    </style>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <header class="topbar">
-        <div class="brand">🐾 Pangolingo</div>
+    <header class="topbar learning-topbar">
+        <div class="brand">Pangolingo</div>
         <div class="user-info">
             <span id="userName"></span>
-            <button id="logoutBtn" class="btn btn-outline-dark btn-sm">Cerrar sesión</button>
+            <button id="logoutBtn" class="btn btn-outline-light btn-sm">Cerrar sesion</button>
         </div>
     </header>
 
-    <main id="contenido">
-        <!-- Página en blanco: aquí vamos a rellenar el contenido -->
+    <main id="contenido" class="learning-shell">
+        <section id="placementPanel" class="card p-4 placement-panel d-none">
+            <div class="panel-header">
+                <p class="eyebrow">Diagnostico inicial</p>
+                <h1>Prueba de nivel</h1>
+                <p>Responde estas preguntas para asignar automaticamente tu nivel inicial CEFR.</p>
+            </div>
+            <form id="placementForm" class="placement-grid">
+                <label>Vocabulary
+                    <select class="form-control" name="vocabulary" required>
+                        <option value="0">Reconozco palabras sueltas</option>
+                        <option value="1">Entiendo vocabulario cotidiano</option>
+                        <option value="2">Uso vocabulario para opinar</option>
+                        <option value="3">Uso vocabulario academico o profesional</option>
+                    </select>
+                </label>
+                <label>Grammar
+                    <select class="form-control" name="grammar" required>
+                        <option value="0">Uso frases muy basicas</option>
+                        <option value="1">Manejo presente, pasado y futuro simple</option>
+                        <option value="2">Uso condicionales y voz pasiva</option>
+                        <option value="3">Uso estructuras complejas con precision</option>
+                    </select>
+                </label>
+                <label>Reading comprehension
+                    <select class="form-control" name="reading" required>
+                        <option value="0">Entiendo textos muy cortos</option>
+                        <option value="1">Entiendo mensajes cotidianos</option>
+                        <option value="2">Entiendo articulos y argumentos</option>
+                        <option value="3">Infiero ideas implicitas en textos complejos</option>
+                    </select>
+                </label>
+                <label>Listening simulation
+                    <select class="form-control" name="listening" required>
+                        <option value="0">Reconozco saludos y numeros</option>
+                        <option value="1">Sigo conversaciones lentas</option>
+                        <option value="2">Sigo explicaciones claras</option>
+                        <option value="3">Sigo discursos extensos y matices</option>
+                    </select>
+                </label>
+                <label>Common expressions
+                    <select class="form-control" name="expressions" required>
+                        <option value="0">Uso saludos y despedidas</option>
+                        <option value="1">Hago solicitudes simples</option>
+                        <option value="2">Expreso opiniones y acuerdos</option>
+                        <option value="3">Adapto expresiones al contexto</option>
+                    </select>
+                </label>
+                <button type="submit" class="btn btn-primary">Asignar mi nivel</button>
+            </form>
+        </section>
+
+        <section id="learningPanel" class="d-none">
+            <section class="card p-4 learning-dashboard">
+                <div class="panel-header">
+                    <p class="eyebrow">Ruta academica</p>
+                    <h1>Aprendizaje CEFR</h1>
+                    <p>Unidades modulares desde A1 hasta C2 con practica, quizzes, repaso y examenes.</p>
+                </div>
+                <div class="stat-grid learning-stat-grid">
+                    <article class="mini-card"><strong id="xpValue">0</strong><span>XP</span></article>
+                    <article class="mini-card"><strong id="streakValue">0</strong><span>Racha</span></article>
+                    <article class="mini-card"><strong id="assignedLevelValue">A1</strong><span>Nivel asignado</span></article>
+                    <article class="mini-card"><strong id="currentUnitValue">A1-U1</strong><span>Unidad actual</span></article>
+                    <article class="mini-card"><strong id="levelPercentValue">0%</strong><span>Avance nivel</span></article>
+                    <article class="mini-card"><strong id="globalPercentValue">0%</strong><span>Avance global</span></article>
+                </div>
+            </section>
+
+            <section class="learning-layout">
+                <aside class="card p-4 level-panel">
+                    <div id="levelTabs" class="level-tabs"></div>
+                    <div class="panel-header mt-3">
+                        <h2 id="levelTitle">A1</h2>
+                        <p id="levelDescription"></p>
+                    </div>
+                    <div id="unitList" class="unit-list"></div>
+                </aside>
+                <section id="unitDetail" class="card p-4 unit-detail"></section>
+            </section>
+        </section>
     </main>
 
-    <script>
-        const STORAGE_KEY = "pangolingo-user";
-        const PROGRESS_KEY = "pangolingo-progress";
-        const savedUser = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-
-        if (!savedUser) {
-            window.location.href = "index.html";
-        } else {
-            document.getElementById("userName").textContent = savedUser.nombre || savedUser.correo;
-        }
-
-        document.getElementById("logoutBtn").addEventListener("click", () => {
-            localStorage.removeItem(STORAGE_KEY);
-            localStorage.removeItem(PROGRESS_KEY);
-            window.location.href = "index.html";
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/levels/level-builder.js"></script>
+    <script src="js/levels/A1.js"></script>
+    <script src="js/levels/A2.js"></script>
+    <script src="js/levels/B1.js"></script>
+    <script src="js/levels/B2.js"></script>
+    <script src="js/levels/C1.js"></script>
+    <script src="js/levels/C2.js"></script>
+    <script src="js/learning.js"></script>
 </body>
 </html>
