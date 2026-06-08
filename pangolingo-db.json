@@ -11,6 +11,18 @@
       "completed": [
         1
       ]
+    },
+    {
+      "id": 1780893683054,
+      "nombre": "David Jeshuat Lopez Hurtado",
+      "correo": "davincrak7@gmail.com",
+      "password": "@1091Dav@",
+      "provider": "Gmail",
+      "xp": 40,
+      "streak": 4,
+      "completed": [
+        1
+      ]
     }
   ]
 }
