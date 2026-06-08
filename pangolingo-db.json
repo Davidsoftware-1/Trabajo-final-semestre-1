@@ -23,6 +23,18 @@
       "completed": [
         1
       ]
+    },
+    {
+      "id": 1780938247807,
+      "nombre": "nico",
+      "correo": "quinteronicole703@gmail.com",
+      "password": "1234567",
+      "provider": "Gmail",
+      "xp": 40,
+      "streak": 4,
+      "completed": [
+        1
+      ]
     }
   ]
 }
