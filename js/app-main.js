@@ -229,21 +229,23 @@ function init() {
     document.getElementById('currentLevelTitle').textContent = levelInfo.title;
     document.getElementById('currentLevelDescription').textContent = levelInfo.description;
 
-    // Generar retos para el nivel A1, A2, B1 y B2
+    // Generar retos para el nivel A1, A2, B1, B2, C1 y C2
     const levelChallengesContainer = document.querySelector('.level-challenges-container');
     if (levelChallengesContainer) {
       if ((level === 'a1' && typeof a1Challenges !== 'undefined') || 
           (level === 'a2' && typeof a2Challenges !== 'undefined') ||
           (level === 'b1' && typeof b1Challenges !== 'undefined') ||
           (level === 'b2' && typeof b2Challenges !== 'undefined') ||
-          (level === 'c1' && typeof c1Challenges !== 'undefined')) {
-        // Mostrar retos de A1, A2, B1, B2 o C1
+          (level === 'c1' && typeof c1Challenges !== 'undefined') ||
+          (level === 'c2' && typeof cNativeChallenges !== 'undefined')) {
+        // Mostrar retos de A1, A2, B1, B2, C1 o C2
         let challenges;
         if (level === 'a1') challenges = a1Challenges;
         else if (level === 'a2') challenges = a2Challenges;
         else if (level === 'b1') challenges = b1Challenges;
         else if (level === 'b2') challenges = b2Challenges;
         else if (level === 'c1') challenges = c1Challenges;
+        else if (level === 'c2') challenges = cNativeChallenges;
         levelChallengesContainer.innerHTML = `
           <div class="challenges-path">
             <div class="challenges-line"></div>
@@ -348,13 +350,15 @@ function init() {
         (level === 'a2' && typeof a2Challenges !== 'undefined') ||
         (level === 'b1' && typeof b1Challenges !== 'undefined') ||
         (level === 'b2' && typeof b2Challenges !== 'undefined') ||
-        (level === 'c1' && typeof c1Challenges !== 'undefined')) {
+        (level === 'c1' && typeof c1Challenges !== 'undefined') ||
+        (level === 'c2' && typeof cNativeChallenges !== 'undefined')) {
       let challenges;
       if (level === 'a1') challenges = a1Challenges;
       else if (level === 'a2') challenges = a2Challenges;
       else if (level === 'b1') challenges = b1Challenges;
       else if (level === 'b2') challenges = b2Challenges;
       else if (level === 'c1') challenges = c1Challenges;
+      else if (level === 'c2') challenges = cNativeChallenges;
       const challenge = challenges.find(c => c.id === challengeId);
       if (challenge) {
         currentChallenge = challenge;
