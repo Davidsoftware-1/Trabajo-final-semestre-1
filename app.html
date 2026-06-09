@@ -42,14 +42,85 @@
             <section id="challengesMode" class="mode-section card p-4">
                 <div class="panel-header">
                     <p class="eyebrow">Retos</p>
-                    <h2>Desafíos diarios</h2>
-                    <p>Completa retos para ganar XP extra.</p>
+                    <h2>Tu Camino de Inglés</h2>
+                    <p>Avanza por los niveles completando los desafíos.</p>
                 </div>
                 <div class="challenges-list mt-4">
-                    <div class="challenge-item p-3 mb-3">
-                        <h4>Reto del día</h4>
-                        <p>Responde 5 preguntas correctamente</p>
-                        <button class="btn btn-primary btn-sm mt-2">Comenzar</button>
+                    <div class="levels-grid">
+                        <div class="level-box a1" data-level="a1">
+                            <div class="level-header">
+                                <div class="level-icon">🌱</div>
+                                <div class="level-info">
+                                    <h3>A1</h3>
+                                    <p>Principiante</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="level-box a2" data-level="a2">
+                            <div class="level-header">
+                                <div class="level-icon">🌿</div>
+                                <div class="level-info">
+                                    <h3>A2</h3>
+                                    <p>Elemental</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="level-box b1" data-level="b1">
+                            <div class="level-header">
+                                <div class="level-icon">🌳</div>
+                                <div class="level-info">
+                                    <h3>B1</h3>
+                                    <p>Intermedio</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="level-box b2" data-level="b2">
+                            <div class="level-header">
+                                <div class="level-icon">🌲</div>
+                                <div class="level-info">
+                                    <h3>B2</h3>
+                                    <p>Intermedio Alto</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="level-box c1" data-level="c1">
+                            <div class="level-header">
+                                <div class="level-icon">🏆</div>
+                                <div class="level-info">
+                                    <h3>C1</h3>
+                                    <p>Avanzado</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="level-box c2" data-level="c2">
+                            <div class="level-header">
+                                <div class="level-icon">👑</div>
+                                <div class="level-info">
+                                    <h3>C2</h3>
+                                    <p>Nativo</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Vista individual de nivel -->
+            <section id="levelView" class="mode-section card p-4">
+                <div class="panel-header">
+                    <button id="backToLevels" class="btn btn-outline-light btn-sm mb-3">← Volver a niveles</button>
+                    <p class="eyebrow" id="currentLevelLabel">Nivel</p>
+                    <h2 id="currentLevelTitle">Título del Nivel</h2>
+                    <p id="currentLevelDescription">Descripción del nivel</p>
+                </div>
+                <div class="level-content mt-4">
+                    <div class="level-challenges-container">
+                        <!-- Aquí se cargarán los retos del nivel -->
+                        <div class="empty-level-state">
+                            <div class="empty-icon">📝</div>
+                            <h3>Retos próximamente</h3>
+                            <p>Los desafíos de este nivel estarán disponibles pronto.</p>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -154,6 +225,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/dictionary.js"></script>
+    <script src="js/translator-api.js"></script>
+    <script src="js/levels/a1-challenges.js"></script>
+    <script src="js/levels/a2-challenges.js"></script>
+    <script src="js/levels/b1-challenges.js"></script>
+    <script src="js/levels/b2-challenges.js"></script>
+    <script src="js/levels/c1-challenges.js"></script>
     <script src="js/app-main.js"></script>
 </body>
 </html>

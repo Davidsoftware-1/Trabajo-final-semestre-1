@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const { Low } = require('lowdb');
 const { JSONFile } = require('lowdb/node');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -258,6 +259,60 @@ app.put('/api/progress/:correo', async (req, res) => {
   await db.write();
 
   res.json({ ok: true, message: 'Progreso guardado en la base de datos.' });
+});
+
+// Endpoint de traducción usando MyMemory API (gratuita)
+app.post('/api/translate', async (req, res) => {
+  try {
+    const { text, sourceLang = 'en', targetLang = 'es' } = req.body;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ ok: false, message: 'Texto requerido para traducción.' });
+    }
+
+    // Usar MyMemory API (gratuita, sin API key para uso básico)
+    const apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLang}|${targetLang}`;
+
+    https.get(apiUrl, (apiRes) => {
+      let data = '';
+
+      apiRes.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      apiRes.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          
+          if (result.responseStatus === 200) {
+            res.json({
+              ok: true,
+              translatedText: result.responseData.translatedText,
+              originalText: text,
+              source: 'MyMemory',
+              sourceLang: sourceLang,
+              targetLang: targetLang
+            });
+          } else {
+            res.status(500).json({
+              ok: false,
+              message: result.responseDetails || 'Error en el servicio de traducción'
+            });
+          }
+        } catch (parseError) {
+          console.error('Error parsing API response:', parseError);
+          res.status(500).json({ ok: false, message: 'Error al procesar la respuesta del servicio de traducción.' });
+        }
+      });
+    }).on('error', (error) => {
+      console.error('Error calling translation API:', error);
+      res.status(500).json({ ok: false, message: 'Error al conectar con el servicio de traducción.' });
+    });
+
+  } catch (error) {
+    console.error('Error en endpoint de traducción:', error);
+    res.status(500).json({ ok: false, message: 'Error interno del servidor en traducción.' });
+  }
 });
 
 app.get('*', (req, res) => {
