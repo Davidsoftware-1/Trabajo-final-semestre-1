@@ -271,6 +271,19 @@ function initSettings() {
   });
 }
 
+function initChallenges() {
+  document.querySelector(".challenges-list")?.addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (button && button.textContent === "Comenzar") {
+      Swal.fire({ 
+        title: "Reto del día", 
+        text: "Responde 3 preguntas rápidas y gana 30 XP extra en tu próxima sesión.", 
+        icon: "info" 
+      });
+    }
+  });
+}
+
 async function init() {
   if (!savedUser) {
     window.location.href = "index.html";
@@ -287,6 +300,7 @@ async function init() {
   initLibrary();
   initSpeaking();
   initSettings();
+  initChallenges();
 }
 
 init();

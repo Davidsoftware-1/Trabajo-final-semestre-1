@@ -380,6 +380,13 @@ h1 {
     color: #ff6b6b;
 }
 
+.challenge-card {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #ffffff, #cfcfcf);
+}
+
 .challenge-item,
 .speaking-scenario,
 .story-item {
