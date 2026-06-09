@@ -329,6 +329,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ ok: false, message: 'Error interno del servidor.', error: err && err.message });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Pangolingo API corriendo en http://localhost:${PORT}`);
 });

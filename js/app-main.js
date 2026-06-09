@@ -152,18 +152,6 @@ function init() {
     }
   });
 
-  // Configurar chat
-  document.getElementById('sendChatBtn')?.addEventListener('click', () => {
-    const chatInput = document.getElementById('chatInput');
-    const chatMessages = document.getElementById('chatMessages');
-    const message = chatInput.value.trim();
-    if (message) {
-      chatMessages.innerHTML += `<div class="mb-2"><strong>Tú:</strong> ${message}</div>`;
-      chatInput.value = '';
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-  });
-
   // Configurar cerrar sesión
   document.getElementById('logoutBtn')?.addEventListener('click', () => {
     localStorage.removeItem(STORAGE_KEY);
