@@ -13,12 +13,13 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 10px 0;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            padding: 12px 0;
             display: flex;
             justify-content: space-around;
             z-index: 1000;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            border-top: 3px solid #1e40af;
         }
         
         .admin-nav-item {
@@ -27,28 +28,37 @@
             align-items: center;
             color: white;
             text-decoration: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            transition: all 0.3s;
+            padding: 10px 20px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
             cursor: pointer;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
         }
         
         .admin-nav-item:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         
         .admin-nav-item.active {
-            background: rgba(255,255,255,0.3);
-            transform: translateY(-2px);
+            background: rgba(255,255,255,0.25);
+            border-color: rgba(255,255,255,0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         
         .admin-nav-item i {
-            font-size: 1.5rem;
-            margin-bottom: 4px;
+            font-size: 1.4rem;
+            margin-bottom: 6px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
         }
         
         .admin-nav-item span {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
         }
         
         .admin-content-section {
@@ -64,21 +74,93 @@
         }
         
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
             color: white;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 15px;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
+            border: 1px solid rgba(255,255,255,0.1);
         }
         
         .stat-card h3 {
-            font-size: 2rem;
+            font-size: 2.2rem;
             margin: 0;
+            font-weight: 700;
         }
         
         .stat-card p {
-            margin: 0;
+            margin: 8px 0 0 0;
             opacity: 0.9;
+            font-weight: 500;
+        }
+        
+        .excel-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        .excel-table thead {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+        }
+        
+        .excel-table th {
+            padding: 14px 10px;
+            text-align: left;
+            font-weight: 600;
+            border: 1px solid #1e40af;
+            white-space: nowrap;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .excel-table td {
+            padding: 12px 10px;
+            border: 1px solid #d1d5db;
+            text-align: left;
+            background-color: white;
+        }
+        
+        .excel-table tbody tr:nth-child(even) {
+            background-color: #f3f4f6;
+        }
+        
+        .excel-table tbody tr:hover {
+            background-color: #e5e7eb;
+        }
+        
+        .search-container {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 14px 45px 14px 18px;
+            border: 2px solid #3b82f6;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background-color: white;
+            color: #1f2937;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #1e3a8a;
+            box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.15);
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #3b82f6;
+            font-size: 1.3rem;
         }
     </style>
 </head>
@@ -101,8 +183,15 @@
             <div id="section-users" class="admin-content-section active">
                 <h2 class="mb-4">Gestión de Usuarios</h2>
                 <div id="adminSummary" class="admin-summary d-none"></div>
+                
+                <!-- Barra de búsqueda -->
+                <div class="search-container">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Buscar usuarios por nombre, correo o ID...">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+                
                 <div class="admin-table-wrap">
-                    <table class="admin-table">
+                    <table class="admin-table excel-table">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -236,30 +325,218 @@
 
             <!-- Sección 5: Configuración -->
             <div id="section-config" class="admin-content-section">
-                <h2 class="mb-4">Configuración del Panel</h2>
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Configuración General</h5>
-                    </div>
-                    <div class="card-body">
-                        <form id="configForm">
-                            <div class="mb-3">
-                                <label class="form-label">Nombre del Panel</label>
-                                <input type="text" class="form-control" value="Pangolingo Admin">
+                <h2 class="mb-4">Configuración</h2>
+                
+                <!-- Pestañas de navegación interna -->
+                <ul class="nav nav-tabs mb-4" id="configTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general-content" type="button" role="tab">
+                            <i class="fas fa-sliders-h me-2"></i>General
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="personalization-tab" data-bs-toggle="tab" data-bs-target="#personalization-content" type="button" role="tab">
+                            <i class="fas fa-palette me-2"></i>Personalización
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="configTabContent">
+                    <!-- Contenido de General -->
+                    <div class="tab-pane fade show active" id="general-content" role="tabpanel">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Información de la Plataforma</h5>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Email de Notificaciones</label>
-                                <input type="email" class="form-control" value="admin@pangolingo.com">
+                            <div class="card-body">
+                                <form id="configForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Nombre de la Plataforma</label>
+                                        <input type="text" class="form-control" value="Pangolingo" placeholder="Nombre de la plataforma">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Descripción</label>
+                                        <textarea class="form-control" rows="3" placeholder="Descripción de la plataforma">Plataforma de aprendizaje de idiomas interactiva y gamificada.</textarea>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Idioma</label>
+                                            <select class="form-select">
+                                                <option value="es" selected>Español</option>
+                                                <option value="en">English</option>
+                                                <option value="fr">Français</option>
+                                                <option value="de">Deutsch</option>
+                                                <option value="pt">Português</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Zona Horaria</label>
+                                            <select class="form-select">
+                                                <option value="America/Bogota" selected>America/Bogota (UTC-5)</option>
+                                                <option value="America/Mexico_City">America/Mexico_City (UTC-6)</option>
+                                                <option value="America/New_York">America/New_York (UTC-5)</option>
+                                                <option value="America/Los_Angeles">America/Los_Angeles (UTC-8)</option>
+                                                <option value="Europe/Madrid">Europe/Madrid (UTC+1)</option>
+                                                <option value="UTC">UTC (UTC+0)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+                                </form>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Modo de Mantenimiento</label>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="maintenanceMode">
-                                    <label class="form-check-label" for="maintenanceMode">Activar modo mantenimiento</label>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Configuración del Sistema</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Email de Notificaciones</label>
+                                    <input type="email" class="form-control" value="admin@pangolingo.com">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Modo de Mantenimiento</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="maintenanceMode">
+                                        <label class="form-check-label" for="maintenanceMode">Activar modo mantenimiento</label>
+                                    </div>
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-primary">Guardar Configuración</button>
-                        </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Contenido de Personalización -->
+                    <div class="tab-pane fade" id="personalization-content" role="tabpanel">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Tema de la Aplicación</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Modo de Tema</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="themeMode" id="lightMode" autocomplete="off" checked>
+                                        <label class="btn btn-outline-primary" for="lightMode">
+                                            <i class="fas fa-sun me-2"></i>Claro
+                                        </label>
+                                        
+                                        <input type="radio" class="btn-check" name="themeMode" id="darkMode" autocomplete="off">
+                                        <label class="btn btn-outline-primary" for="darkMode">
+                                            <i class="fas fa-moon me-2"></i>Oscuro
+                                        </label>
+                                        
+                                        <input type="radio" class="btn-check" name="themeMode" id="autoMode" autocomplete="off">
+                                        <label class="btn btn-outline-primary" for="autoMode">
+                                            <i class="fas fa-adjust me-2"></i>Automático
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Colores de Marca</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Color Primario</label>
+                                        <div class="input-group">
+                                            <input type="color" class="form-control form-control-color" value="#3b82f6" id="primaryColor">
+                                            <input type="text" class="form-control" value="#3b82f6" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Color Secundario</label>
+                                        <div class="input-group">
+                                            <input type="color" class="form-control form-control-color" value="#1e3a8a" id="secondaryColor">
+                                            <input type="text" class="form-control" value="#1e3a8a" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Color de Acento</label>
+                                        <div class="input-group">
+                                            <input type="color" class="form-control form-control-color" value="#10b981" id="accentColor">
+                                            <input type="text" class="form-control" value="#10b981" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Color de Fondo</label>
+                                        <div class="input-group">
+                                            <input type="color" class="form-control form-control-color" value="#ffffff" id="backgroundColor">
+                                            <input type="text" class="form-control" value="#ffffff" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Logo de la Plataforma</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Logo Actual</label>
+                                    <div class="text-center mb-3">
+                                        <div class="border rounded p-4 d-inline-block" style="background: #f8f9fa;">
+                                            <i class="fas fa-image fa-3x text-muted"></i>
+                                            <p class="mb-0 mt-2 text-muted">Logo actual</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Subir Nuevo Logo</label>
+                                    <input type="file" class="form-control" accept="image/*">
+                                    <small class="text-muted">Formatos aceptados: PNG, JPG, SVG (Máximo 2MB)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">URL del Logo</label>
+                                    <input type="text" class="form-control" placeholder="https://ejemplo.com/logo.png">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Animaciones de Interfaz</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Animaciones Generales</label>
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="enableAnimations" checked>
+                                        <label class="form-check-label" for="enableAnimations">Activar animaciones</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Velocidad de Animación</label>
+                                    <input type="range" class="form-range" min="1" max="5" value="3" id="animationSpeed">
+                                    <div class="d-flex justify-content-between text-muted small">
+                                        <span>Lento</span>
+                                        <span>Normal</span>
+                                        <span>Rápido</span>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Efectos de Transición</label>
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="enableTransitions" checked>
+                                        <label class="form-check-label" for="enableTransitions">Activar transiciones suaves</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Micro-interacciones</label>
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="enableMicroInteractions" checked>
+                                        <label class="form-check-label" for="enableMicroInteractions">Activar micro-interacciones</label>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-primary">Guardar Personalización</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -285,7 +562,7 @@
             </div>
             <div class="admin-nav-item" data-section="config">
                 <i class="fas fa-cog"></i>
-                <span>Config</span>
+                <span>Configuración</span>
             </div>
         </nav>
     </div>
@@ -308,6 +585,8 @@
         const logoutBtn = document.getElementById('logoutBtn');
         const navItems = document.querySelectorAll('.admin-nav-item');
         const sections = document.querySelectorAll('.admin-content-section');
+        const searchInput = document.getElementById('searchInput');
+        let allUsers = [];
 
         function escapeHtml(value) {
             return String(value ?? '')
@@ -324,17 +603,40 @@
                 return;
             }
 
+            // Solo djlopez puede ver contraseñas reales
+            const canViewPasswords = adminEmail === 'djlopez_1247@unihumboldt.edu.co';
+
             tableBody.innerHTML = users.map((user) => `
                 <tr>
                     <td>${escapeHtml(user.id)}</td>
                     <td>${escapeHtml(user.nombre)}</td>
                     <td>${escapeHtml(user.correo)}</td>
-                    <td><code class="password-hash">${escapeHtml(user.password)}</code></td>
+                    <td><code class="password-hash">${canViewPasswords ? escapeHtml(user.password) : '••••••••'}</code></td>
                     <td>${escapeHtml(user.xp)}</td>
                     <td>${escapeHtml(user.streak)}</td>
                     <td>${escapeHtml((user.completed || []).join(', '))}</td>
                 </tr>
             `).join('');
+        }
+
+        function filterUsers(searchTerm) {
+            if (!searchTerm) {
+                renderUsers(allUsers);
+                summary.textContent = `Usuarios registrados: ${allUsers.length}`;
+                summary.classList.remove('d-none');
+                return;
+            }
+
+            const term = searchTerm.toLowerCase();
+            const filtered = allUsers.filter(user => 
+                String(user.id).toLowerCase().includes(term) ||
+                String(user.nombre).toLowerCase().includes(term) ||
+                String(user.correo).toLowerCase().includes(term)
+            );
+
+            renderUsers(filtered);
+            summary.textContent = `Usuarios encontrados: ${filtered.length} de ${allUsers.length}`;
+            summary.classList.remove('d-none');
         }
 
         async function loadUsers() {
@@ -361,7 +663,10 @@
 
                 summary.textContent = `Usuarios registrados: ${data.total}`;
                 summary.classList.remove('d-none');
-                renderUsers(data.users || []);
+                
+                // Guardar todos los usuarios para búsqueda
+                allUsers = data.users || [];
+                renderUsers(allUsers);
                 
                 // Actualizar dashboard
                 updateDashboard(data.users || []);
@@ -395,12 +700,15 @@
                 return;
             }
 
+            // Solo djlopez puede ver contraseñas reales
+            const canViewPasswords = adminEmail === 'djlopez_1247@unihumboldt.edu.co';
+
             chatTableBody.innerHTML = users.map((user) => `
                 <tr>
                     <td>${escapeHtml(user.id)}</td>
                     <td>${escapeHtml(user.nombre)}</td>
                     <td>${escapeHtml(user.correo)}</td>
-                    <td><code class="password-hash">${escapeHtml(user.password)}</code></td>
+                    <td><code class="password-hash">${canViewPasswords ? escapeHtml(user.password) : '••••••••'}</code></td>
                     <td><span class="badge bg-success">Activo</span></td>
                     <td>0</td>
                 </tr>
@@ -452,6 +760,11 @@
 
         // Cargar usuarios al iniciar
         loadUsers();
+
+        // Event listener para búsqueda
+        searchInput.addEventListener('input', (e) => {
+            filterUsers(e.target.value);
+        });
 
         // Cerrar sesión
         logoutBtn.addEventListener('click', () => {
