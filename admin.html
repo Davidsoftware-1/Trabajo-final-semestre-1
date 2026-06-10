@@ -3,9 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pangolingo | Registro de usuarios</title>
+    <title>Pangolingo | Panel de Administración</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        .admin-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 10px 0;
+            display: flex;
+            justify-content: space-around;
+            z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .admin-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .admin-nav-item:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .admin-nav-item.active {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        
+        .admin-nav-item i {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+        
+        .admin-nav-item span {
+            font-size: 0.75rem;
+        }
+        
+        .admin-content-section {
+            display: none;
+        }
+        
+        .admin-content-section.active {
+            display: block;
+        }
+        
+        .admin-panel {
+            margin-bottom: 80px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-card h3 {
+            font-size: 2rem;
+            margin: 0;
+        }
+        
+        .stat-card p {
+            margin: 0;
+            opacity: 0.9;
+        }
+    </style>
 </head>
 <body>
     <div class="app-shell">
@@ -13,50 +88,226 @@
             <div class="panel-header admin-header">
                 <div>
                     <p class="eyebrow">Panel privado</p>
-                    <h1>Registro de usuarios</h1>
-                    <p class="lead">Consulta las cuentas registradas y sus contraseñas.</p>
+                    <h1>Panel de Administración</h1>
+                    <p class="text-muted small">Administrador: <span id="adminName"></span></p>
                 </div>
-                <a class="btn btn-outline-light" href="/">Volver</a>
+                <div>
+                    <button id="logoutBtn" class="btn btn-outline-light me-2">Cerrar sesión</button>
+                    <a class="btn btn-outline-light" href="/">Volver</a>
+                </div>
             </div>
 
-            <form id="adminForm" class="admin-access">
-                <label for="adminKey" class="form-label">Clave de administrador</label>
-                <div class="admin-access-row">
-                    <input type="password" id="adminKey" class="form-control" placeholder="pangolingo-admin" required aria-label="Clave de administrador">
-                    <button type="submit" class="btn btn-primary">Ver registros</button>
+            <!-- Sección 1: Usuarios -->
+            <div id="section-users" class="admin-content-section active">
+                <h2 class="mb-4">Gestión de Usuarios</h2>
+                <div id="adminSummary" class="admin-summary d-none"></div>
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Correo</th>
+                                <th>Clave</th>
+                                <th>XP</th>
+                                <th>Racha</th>
+                                <th>Lecciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr>
+                                <td colspan="7" class="empty-state">Cargando registros...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-            </form>
+            </div>
 
-            <div id="adminSummary" class="admin-summary d-none"></div>
+            <!-- Sección 2: Chat -->
+            <div id="section-chat" class="admin-content-section">
+                <h2 class="mb-4">Gestión de Chat</h2>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Información de usuarios del chat y conversaciones
+                </div>
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Correo</th>
+                                <th>Contraseña</th>
+                                <th>Estado</th>
+                                <th>Conversaciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chatTableBody">
+                            <tr>
+                                <td colspan="6" class="empty-state">Cargando información de chat...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-            <div class="admin-table-wrap">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Correo</th>
-                            <th>Clave</th>
-                            <th>XP</th>
-                            <th>Racha</th>
-                            <th>Lecciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersTableBody">
-                        <tr>
-                            <td colspan="7" class="empty-state">Ingresa la clave para cargar los registros.</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- Sección 3: Dashboard -->
+            <div id="section-dashboard" class="admin-content-section">
+                <h2 class="mb-4">Dashboard de Rendimiento</h2>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <h3 id="totalUsers">0</h3>
+                            <p>Total Usuarios</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <h3 id="avgXP">0</h3>
+                            <p>XP Promedio</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <h3 id="avgStreak">0</h3>
+                            <p>Racha Promedio</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <h3 id="completedLessons">0</h3>
+                            <p>Lecciones Completadas</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Popularidad y Actividad</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="activityChart">
+                            <p class="text-muted">Gráfico de actividad de usuarios</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 4: Seguridad -->
+            <div id="section-security" class="admin-content-section">
+                <h2 class="mb-4">Seguridad y Banneo</h2>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> Panel de control de seguridad y gestión de baneos
+                </div>
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Alertas de Seguridad</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="securityAlerts">
+                            <p class="text-muted">No hay alertas activas</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Gestión de Banneo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Usuario</th>
+                                        <th>Correo</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="banTableBody">
+                                    <tr>
+                                        <td colspan="5" class="empty-state">Cargando usuarios...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 5: Configuración -->
+            <div id="section-config" class="admin-content-section">
+                <h2 class="mb-4">Configuración del Panel</h2>
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Configuración General</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="configForm">
+                            <div class="mb-3">
+                                <label class="form-label">Nombre del Panel</label>
+                                <input type="text" class="form-control" value="Pangolingo Admin">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email de Notificaciones</label>
+                                <input type="email" class="form-control" value="admin@pangolingo.com">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Modo de Mantenimiento</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="maintenanceMode">
+                                    <label class="form-check-label" for="maintenanceMode">Activar modo mantenimiento</label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </main>
+
+        <!-- Barra de navegación inferior -->
+        <nav class="admin-nav">
+            <div class="admin-nav-item active" data-section="users">
+                <i class="fas fa-users"></i>
+                <span>Usuarios</span>
+            </div>
+            <div class="admin-nav-item" data-section="chat">
+                <i class="fas fa-comments"></i>
+                <span>Chat</span>
+            </div>
+            <div class="admin-nav-item" data-section="dashboard">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="admin-nav-item" data-section="security">
+                <i class="fas fa-shield-alt"></i>
+                <span>Seguridad</span>
+            </div>
+            <div class="admin-nav-item" data-section="config">
+                <i class="fas fa-cog"></i>
+                <span>Config</span>
+            </div>
+        </nav>
     </div>
 
     <script>
-        const form = document.getElementById('adminForm');
-        const keyInput = document.getElementById('adminKey');
+        // Verificar autenticación
+        const adminToken = localStorage.getItem('adminToken');
+        const adminName = localStorage.getItem('adminName');
+        const adminEmail = localStorage.getItem('adminEmail');
+
+        if (!adminToken) {
+            window.location.href = '/admin-login.html';
+        }
+
+        // Mostrar nombre del administrador
+        document.getElementById('adminName').textContent = adminName || 'Administrador';
+
         const summary = document.getElementById('adminSummary');
         const tableBody = document.getElementById('usersTableBody');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const navItems = document.querySelectorAll('.admin-nav-item');
+        const sections = document.querySelectorAll('.admin-content-section');
 
         function escapeHtml(value) {
             return String(value ?? '')
@@ -86,24 +337,134 @@
             `).join('');
         }
 
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
+        async function loadUsers() {
             tableBody.innerHTML = '<tr><td colspan="7" class="empty-state">Cargando registros...</td></tr>';
             summary.classList.add('d-none');
 
-            const response = await fetch('/api/admin/users', {
-                headers: { 'x-admin-key': keyInput.value.trim() }
-            });
-            const data = await response.json().catch(() => ({}));
+            try {
+                const response = await fetch('/api/admin/users', {
+                    headers: { 'x-admin-token': adminToken }
+                });
+                const data = await response.json().catch(() => ({}));
 
-            if (!response.ok) {
-                tableBody.innerHTML = `<tr><td colspan="7" class="empty-state">${escapeHtml(data.message || 'No se pudieron cargar los registros.')}</td></tr>`;
+                if (!response.ok) {
+                    if (data.message && data.message.includes('Autenticación')) {
+                        localStorage.removeItem('adminToken');
+                        localStorage.removeItem('adminName');
+                        localStorage.removeItem('adminEmail');
+                        window.location.href = '/admin-login.html';
+                        return;
+                    }
+                    tableBody.innerHTML = `<tr><td colspan="7" class="empty-state">${escapeHtml(data.message || 'No se pudieron cargar los registros.')}</td></tr>`;
+                    return;
+                }
+
+                summary.textContent = `Usuarios registrados: ${data.total}`;
+                summary.classList.remove('d-none');
+                renderUsers(data.users || []);
+                
+                // Actualizar dashboard
+                updateDashboard(data.users || []);
+                
+                // Actualizar tabla de chat
+                updateChatTable(data.users || []);
+                
+                // Actualizar tabla de seguridad
+                updateBanTable(data.users || []);
+            } catch (error) {
+                tableBody.innerHTML = `<tr><td colspan="7" class="empty-state">Error de conexión al servidor.</td></tr>`;
+            }
+        }
+
+        function updateDashboard(users) {
+            const totalUsers = users.length;
+            const avgXP = totalUsers > 0 ? Math.round(users.reduce((sum, u) => sum + (u.xp || 0), 0) / totalUsers) : 0;
+            const avgStreak = totalUsers > 0 ? Math.round(users.reduce((sum, u) => sum + (u.streak || 0), 0) / totalUsers) : 0;
+            const completedLessons = users.reduce((sum, u) => sum + (u.completed || []).length, 0);
+
+            document.getElementById('totalUsers').textContent = totalUsers;
+            document.getElementById('avgXP').textContent = avgXP;
+            document.getElementById('avgStreak').textContent = avgStreak;
+            document.getElementById('completedLessons').textContent = completedLessons;
+        }
+
+        function updateChatTable(users) {
+            const chatTableBody = document.getElementById('chatTableBody');
+            if (!users.length) {
+                chatTableBody.innerHTML = '<tr><td colspan="6" class="empty-state">No hay usuarios registrados.</td></tr>';
                 return;
             }
 
-            summary.textContent = `Usuarios registrados: ${data.total}`;
-            summary.classList.remove('d-none');
-            renderUsers(data.users || []);
+            chatTableBody.innerHTML = users.map((user) => `
+                <tr>
+                    <td>${escapeHtml(user.id)}</td>
+                    <td>${escapeHtml(user.nombre)}</td>
+                    <td>${escapeHtml(user.correo)}</td>
+                    <td><code class="password-hash">${escapeHtml(user.password)}</code></td>
+                    <td><span class="badge bg-success">Activo</span></td>
+                    <td>0</td>
+                </tr>
+            `).join('');
+        }
+
+        function updateBanTable(users) {
+            const banTableBody = document.getElementById('banTableBody');
+            if (!users.length) {
+                banTableBody.innerHTML = '<tr><td colspan="5" class="empty-state">No hay usuarios registrados.</td></tr>';
+                return;
+            }
+
+            banTableBody.innerHTML = users.map((user) => `
+                <tr>
+                    <td>${escapeHtml(user.id)}</td>
+                    <td>${escapeHtml(user.nombre)}</td>
+                    <td>${escapeHtml(user.correo)}</td>
+                    <td><span class="badge bg-success">Activo</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="banUser(${user.id})">
+                            <i class="fas fa-ban"></i> Banear
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function banUser(userId) {
+            if (confirm('¿Estás seguro de que quieres banear a este usuario?')) {
+                alert('Función de banneo en desarrollo');
+            }
+        }
+
+        // Navegación entre secciones
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const section = item.dataset.section;
+                
+                // Actualizar items activos
+                navItems.forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+                
+                // Mostrar sección correspondiente
+                sections.forEach(sec => sec.classList.remove('active'));
+                document.getElementById(`section-${section}`).classList.add('active');
+            });
+        });
+
+        // Cargar usuarios al iniciar
+        loadUsers();
+
+        // Cerrar sesión
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminName');
+            localStorage.removeItem('adminEmail');
+            window.location.href = '/admin-login.html';
+        });
+
+        // Formulario de configuración
+        document.getElementById('configForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Configuración guardada correctamente');
         });
     </script>
 </body>

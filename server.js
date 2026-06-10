@@ -3,11 +3,30 @@ const path = require('path');
 const { Low } = require('lowdb');
 const { JSONFile } = require('lowdb/node');
 const https = require('https');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_KEY = process.env.ADMIN_KEY || 'pangolingo-admin';
-const dbFile = path.join(__dirname, 'pangolingo-db.json');
+
+// Administradores fijos
+const ADMIN_USERS = [
+  { email: 'gonzalezbernalsteeven@gmail.com', password: 'Barcelona', name: 'Steeven Gonzalez' },
+  { email: 'smarin_1171@unihumboldt.edu.co', password: '1094911727', name: 'Santiago Marin' },
+  { email: 'djlopez_1247@unihumboldt.edu.co', password: '@Dav1091@', name: 'David Lopez' },
+  { email: 'magiraldo_1283@unihumboldt.edu.co', password: 'pangolin', name: 'Miguel Giraldo' },
+  { email: 'jsgonzalez_1063@unihumboldt.edu.co', password: 'redhat', name: 'Juan Sebastian Gonzalez' }
+];
+
+// Railway: usar /data para persistencia
+const dataDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
+const dbFile = path.join(dataDir, 'pangolingo-db.json');
+
+// Asegurar que el directorio existe
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
 const adapter = new JSONFile(dbFile);
 const db = new Low(adapter, { users: [] });
 
@@ -60,6 +79,32 @@ async function initDb() {
   db.data ||= { users: [] };
   await db.write();
   console.log(`[DB] Base de datos lista (${dbFile}). Usuarios: ${db.data.users.length}`);
+  
+  // Backup automático cada hora
+  setInterval(async () => {
+    try {
+      await db.read();
+      const backupFile = path.join(dataDir, `pangolingo-db-backup-${Date.now()}.json`);
+      const fs = require('fs');
+      fs.copyFileSync(dbFile, backupFile);
+      console.log(`[DB] Backup creado: ${backupFile}`);
+      
+      // Mantener solo los últimos 5 backups
+      const files = fs.readdirSync(dataDir)
+        .filter(f => f.startsWith('pangolingo-db-backup-'))
+        .sort()
+        .reverse();
+      
+      if (files.length > 5) {
+        files.slice(5).forEach(f => {
+          fs.unlinkSync(path.join(dataDir, f));
+          console.log(`[DB] Backup antiguo eliminado: ${f}`);
+        });
+      }
+    } catch (error) {
+      console.error('[DB] Error en backup automático:', error);
+    }
+  }, 60 * 60 * 1000); // Cada hora
 }
 
 initDb().catch((error) => {
@@ -70,13 +115,107 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true, message: 'Pangolingo API activa' });
 });
 
+app.get('/api/db-status', async (req, res) => {
+  try {
+    await db.read();
+    const fs = require('fs');
+    const stats = fs.statSync(dbFile);
+    const backups = fs.readdirSync(dataDir)
+      .filter(f => f.startsWith('pangolingo-db-backup-'))
+      .length;
+    
+    res.json({
+      ok: true,
+      users: db.data.users.length,
+      dbFile: dbFile,
+      dbSize: stats.size,
+      lastModified: stats.mtime,
+      backups: backups,
+      dataDir: dataDir,
+      persistent: !!process.env.RAILWAY_VOLUME_MOUNT_PATH
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
 function isAdmin(req) {
   return req.get('x-admin-key') === ADMIN_KEY;
 }
 
+// Endpoint de login para administradores
+app.post('/api/admin/login', (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ ok: false, message: 'Correo y contraseña requeridos.' });
+  }
+
+  const normalizedEmail = normalizeEmail(email);
+  const admin = ADMIN_USERS.find(a => normalizeEmail(a.email) === normalizedEmail && a.password === password);
+
+  if (!admin) {
+    return res.status(401).json({ ok: false, message: 'Credenciales de administrador incorrectas.' });
+  }
+
+  // Generar token de sesión simple
+  const adminToken = Buffer.from(`${admin.email}:${Date.now()}`).toString('base64');
+
+  res.json({
+    ok: true,
+    admin: {
+      email: admin.email,
+      name: admin.name
+    },
+    token: adminToken
+  });
+});
+
+// Middleware para verificar token de admin
+function verifyAdminToken(req, res, next) {
+  const token = req.get('x-admin-token');
+  if (!token) {
+    return res.status(401).json({ ok: false, message: 'Token de administrador requerido.' });
+  }
+
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf-8');
+    const [email] = decoded.split(':');
+    const admin = ADMIN_USERS.find(a => normalizeEmail(a.email) === normalizeEmail(email));
+
+    if (!admin) {
+      return res.status(401).json({ ok: false, message: 'Token de administrador inválido.' });
+    }
+
+    req.admin = admin;
+    next();
+  } catch (error) {
+    return res.status(401).json({ ok: false, message: 'Token de administrador inválido.' });
+  }
+}
+
 app.get('/api/admin/users', async (req, res) => {
-  if (!isAdmin(req)) {
-    return res.status(401).json({ ok: false, message: 'Clave de administrador incorrecta.' });
+  // Soportar ambos métodos: antiguo (admin-key) y nuevo (admin-token)
+  const oldMethod = isAdmin(req);
+  const token = req.get('x-admin-token');
+  
+  let newMethod = false;
+  if (token) {
+    try {
+      const decoded = Buffer.from(token, 'base64').toString('utf-8');
+      const [email] = decoded.split(':');
+      const admin = ADMIN_USERS.find(a => normalizeEmail(a.email) === normalizeEmail(email));
+      if (admin) {
+        req.admin = admin;
+        newMethod = true;
+      }
+    } catch (error) {
+      // Token inválido
+    }
+  }
+
+  if (!oldMethod && !newMethod) {
+    return res.status(401).json({ ok: false, message: 'Autenticación de administrador requerida.' });
   }
 
   await db.read();
