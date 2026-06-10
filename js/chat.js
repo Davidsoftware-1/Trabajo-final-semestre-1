@@ -128,6 +128,171 @@ function setupEventListeners() {
     document.getElementById('searchConversations').addEventListener('input', (e) => {
         filterConversations(e.target.value);
     });
+    
+    // Navigation tabs
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tab = btn.dataset.tab;
+            switchTab(tab);
+        });
+    });
+    
+    // Scroll controls
+    document.getElementById('scrollUpBtn').addEventListener('click', () => {
+        chatMessages.scrollBy({ top: -200, behavior: 'smooth' });
+    });
+    
+    document.getElementById('scrollDownBtn').addEventListener('click', () => {
+        chatMessages.scrollBy({ top: 200, behavior: 'smooth' });
+    });
+}
+
+function switchTab(tab) {
+    // Update nav buttons
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.tab === tab) {
+            btn.classList.add('active');
+        }
+    });
+
+    // Hide all lists
+    document.getElementById('conversationsList').classList.add('d-none');
+    document.getElementById('friendsList').classList.add('d-none');
+    document.getElementById('discoverList').classList.add('d-none');
+
+    // Show selected list
+    switch(tab) {
+        case 'conversations':
+            document.getElementById('conversationsList').classList.remove('d-none');
+            loadConversations();
+            break;
+        case 'friends':
+            document.getElementById('friendsList').classList.remove('d-none');
+            loadFriends();
+            break;
+        case 'discover':
+            document.getElementById('discoverList').classList.remove('d-none');
+            loadDiscover();
+            break;
+    }
+}
+
+async function loadFriends() {
+    try {
+        const response = await fetch(`${API_URL}/conversations`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (data.ok) {
+            const friends = data.conversations.map(conv => ({
+                id: conv.other_user_id,
+                name: conv.display_name,
+                profile_photo: conv.display_photo,
+                country: conv.other_user_country,
+                native_language: conv.other_user_native_language,
+                learning_language: conv.other_user_learning_language
+            }));
+            renderFriends(friends);
+        } else {
+            document.getElementById('friendsList').innerHTML = '<p class="text-center p-3">No tienes amigos aún</p>';
+        }
+    } catch (error) {
+        console.error('Error loading friends:', error);
+        document.getElementById('friendsList').innerHTML = '<p class="text-center p-3">Error al cargar amigos</p>';
+    }
+}
+
+function renderFriends(friends) {
+    const friendsList = document.getElementById('friendsList');
+
+    if (friends.length === 0) {
+        friendsList.innerHTML = '<p class="text-center p-3">No tienes amigos aún</p>';
+        return;
+    }
+
+    friendsList.innerHTML = friends.map(friend => `
+        <div class="conversation-item" onclick="startChatWithUser(${friend.id})">
+            <img src="${friend.profile_photo || 'https://via.placeholder.com/50'}" alt="${friend.name}" class="conversation-photo">
+            <div class="conversation-info">
+                <div class="conversation-header">
+                    <span class="conversation-name">${friend.name}</span>
+                    <span class="conversation-time">${friend.country || ''}</span>
+                </div>
+                <div class="conversation-preview">
+                    <span class="conversation-last-message">${friend.native_language || ''} - ${friend.learning_language || ''}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadDiscover() {
+    try {
+        const response = await fetch(`${API_URL}/users/search/match`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (data.ok) {
+            renderDiscover(data.users || []);
+        } else {
+            document.getElementById('discoverList').innerHTML = '<p class="text-center p-3">No hay usuarios disponibles</p>';
+        }
+    } catch (error) {
+        console.error('Error loading discover:', error);
+        document.getElementById('discoverList').innerHTML = '<p class="text-center p-3">Error al cargar usuarios</p>';
+    }
+}
+
+function renderDiscover(users) {
+    const discoverList = document.getElementById('discoverList');
+
+    if (users.length === 0) {
+        discoverList.innerHTML = '<p class="text-center p-3">No hay usuarios disponibles</p>';
+        return;
+    }
+
+    discoverList.innerHTML = users.map(user => `
+        <div class="conversation-item" onclick="startChatWithUser(${user.id})">
+            <img src="${user.profile_photo || 'https://via.placeholder.com/50'}" alt="${user.name}" class="conversation-photo">
+            <div class="conversation-info">
+                <div class="conversation-header">
+                    <span class="conversation-name">${user.name}</span>
+                    <span class="conversation-time">${user.country || ''}</span>
+                </div>
+                <div class="conversation-preview">
+                    <span class="conversation-last-message">${user.native_language || ''} - ${user.learning_language || ''}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function startChatWithUser(userId) {
+    try {
+        const response = await fetch(`${API_URL}/conversations`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ other_user_id: userId })
+        });
+
+        const data = await response.json();
+
+        if (data.ok) {
+            switchTab('conversations');
+            loadConversations();
+        } else {
+            Swal.fire('Error', data.message || 'No se pudo iniciar la conversación', 'error');
+        }
+    } catch (error) {
+        console.error('Error starting chat:', error);
+        Swal.fire('Error', 'No se pudo iniciar la conversación', 'error');
+    }
 }
 
 // Authentication Functions
@@ -172,6 +337,7 @@ async function handleRegister() {
     const native_language = document.getElementById('nativeLanguage').value;
     const learning_language = document.getElementById('learningLanguage').value;
     const language_level = document.getElementById('languageLevel').value;
+    const country = document.getElementById('registerCountry').value;
     
     if (!name || !email || !password) {
         Swal.fire('Error', 'Por favor completa todos los campos requeridos', 'error');
@@ -182,7 +348,7 @@ async function handleRegister() {
         const response = await fetch(`${API_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password, native_language, learning_language, language_level })
+            body: JSON.stringify({ name, email, password, native_language, learning_language, language_level, country })
         });
         
         const data = await response.json();

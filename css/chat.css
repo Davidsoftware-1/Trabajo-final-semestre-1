@@ -8,12 +8,12 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background-color: #111b21;
     color: #e9edef;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
+    overflow-y: auto;
 }
 
 #app {
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
@@ -23,7 +23,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100vh;
+    min-height: 100vh;
+    padding: 2rem 0;
     background: linear-gradient(135deg, #00a884 0%, #008f6f 100%);
 }
 
@@ -94,7 +95,7 @@ body {
 /* Chat Interface */
 #chatInterface {
     display: flex;
-    height: 100vh;
+    min-height: 100vh;
     background-color: #111b21;
 }
 
@@ -169,6 +170,37 @@ body {
     color: #e9edef;
 }
 
+.sidebar-nav {
+    display: flex;
+    border-bottom: 1px solid #222d34;
+    background-color: #111b21;
+}
+
+.nav-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #8696a0;
+    padding: 0.75rem 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.nav-btn:hover {
+    color: #e9edef;
+    background-color: #202c33;
+}
+
+.nav-btn.active {
+    color: #00a884;
+    border-bottom: 2px solid #00a884;
+}
+
 .sidebar-search {
     padding: 0.5rem 1rem;
     background-color: #111b21;
@@ -199,17 +231,23 @@ body {
     color: #8696a0;
 }
 
-.conversations-list {
+.conversations-list,
+.friends-list,
+.discover-list {
     flex: 1;
     overflow-y: auto;
     background-color: #111b21;
 }
 
-.conversations-list::-webkit-scrollbar {
+.conversations-list::-webkit-scrollbar,
+.friends-list::-webkit-scrollbar,
+.discover-list::-webkit-scrollbar {
     width: 6px;
 }
 
-.conversations-list::-webkit-scrollbar-thumb {
+.conversations-list::-webkit-scrollbar-thumb,
+.friends-list::-webkit-scrollbar-thumb,
+.discover-list::-webkit-scrollbar-thumb {
     background-color: #374045;
     border-radius: 3px;
 }
@@ -298,6 +336,8 @@ body {
     flex-direction: column;
     background-color: #0b141a;
     background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%230b141a" width="100" height="100"/><g fill="%23111b21"><circle cx="20" cy="20" r="2"/><circle cx="80" cy="20" r="2"/><circle cx="50" cy="50" r="2"/><circle cx="20" cy="80" r="2"/><circle cx="80" cy="80" r="2"/></g></svg>');
+    overflow: hidden;
+    position: relative;
 }
 
 .no-conversation {
@@ -382,10 +422,12 @@ body {
 .chat-messages {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    position: relative;
 }
 
 .chat-messages::-webkit-scrollbar {
@@ -395,6 +437,47 @@ body {
 .chat-messages::-webkit-scrollbar-thumb {
     background-color: #374045;
     border-radius: 3px;
+}
+
+.chat-scroll-controls {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.scroll-up-btn,
+.scroll-down-btn {
+    background-color: #202c33;
+    color: #aebac1;
+    border: 1px solid #374045;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+}
+
+.scroll-up-btn:hover,
+.scroll-down-btn:hover {
+    background-color: #00a884;
+    color: white;
+    border-color: #00a884;
+}
+
+.scroll-up-btn:active,
+.scroll-down-btn:active {
+    transform: scale(0.95);
 }
 
 .message {

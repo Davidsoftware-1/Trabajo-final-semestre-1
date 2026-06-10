@@ -54,6 +54,24 @@ function init() {
     });
   });
 
+  // Configurar botones de lectura de historias
+  document.querySelectorAll('.story-item .btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const storyItem = e.target.closest('.story-item');
+      const storyId = storyItem.dataset.story;
+      openStory(storyId);
+    });
+  });
+
+  // Configurar click en items de historia también
+  document.querySelectorAll('.story-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const storyId = item.dataset.story;
+      openStory(storyId);
+    });
+  });
+
   // Configurar modo de traductor (diccionario + APIs)
   document.getElementById('searchBtn')?.addEventListener('click', async () => {
     const searchWord = document.getElementById('searchWord').value.trim().toLowerCase();
@@ -483,6 +501,27 @@ function init() {
       text: 'Las historias estarán disponibles pronto.',
       icon: 'info'
     });
+  });
+}
+
+function openStory(storyId) {
+  const story = getStory(storyId);
+  if (!story) {
+    Swal.fire('Error', 'Story not found', 'error');
+    return;
+  }
+
+  Swal.fire({
+    title: story.title,
+    html: story.content,
+    width: '90%',
+    maxWidth: '800px',
+    customClass: {
+      popup: 'story-modal'
+    },
+    showCloseButton: true,
+    showConfirmButton: false,
+    scrollbarPadding: false
   });
 }
 
