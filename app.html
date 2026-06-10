@@ -444,10 +444,90 @@
                     <p>Conversaciones cortas para mejorar tu pronunciación.</p>
                 </div>
                 <div class="speaking-container mt-4">
-                    <div class="speaking-scenario p-3 mb-3">
-                        <h4>Escenario: En el restaurante</h4>
-                        <p>Tú: "I would like to order..."</p>
-                        <button class="btn btn-primary btn-sm mt-2">Grabar respuesta</button>
+                    <div class="speaking-challenges mb-4">
+                        <h5 class="mb-3">Retos de pronunciación</h5>
+                        <div class="challenge-grid">
+                            <div class="speaking-challenge p-3" data-challenge="greetings">
+                                <div class="challenge-icon">👋</div>
+                                <h6>Saludos</h6>
+                                <p class="small text-muted">Practica greetings básicos</p>
+                                <span class="challenge-level">Level: A1</span>
+                            </div>
+                            <div class="speaking-challenge p-3" data-challenge="ordering">
+                                <div class="challenge-icon">🍽️</div>
+                                <h6>En el restaurante</h6>
+                                <p class="small text-muted">Practica pedir comida</p>
+                                <span class="challenge-level">Level: A2</span>
+                            </div>
+                            <div class="speaking-challenge p-3" data-challenge="directions">
+                                <div class="challenge-icon">🗺️</div>
+                                <h6>Direcciones</h6>
+                                <p class="small text-muted">Pide y da direcciones</p>
+                                <span class="challenge-level">Level: B1</span>
+                            </div>
+                            <div class="speaking-challenge p-3" data-challenge="interview">
+                                <div class="challenge-icon">💼</div>
+                                <h6>Entrevista</h6>
+                                <p class="small text-muted">Practica para entrevistas</p>
+                                <span class="challenge-level">Level: B2</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="speaking-practice-area p-3 mb-3">
+                        <h5 id="currentChallengeTitle">Selecciona un reto para comenzar</h5>
+                        <p id="currentChallengePrompt" class="text-muted">Haz clic en un reto arriba para empezar a practicar</p>
+                        
+                        <div class="recording-controls mt-4">
+                            <button class="btn btn-primary" id="startRecordingBtn">
+                                <i class="fas fa-microphone"></i> Grabar
+                            </button>
+                            <button class="btn btn-danger d-none" id="stopRecordingBtn">
+                                <i class="fas fa-stop"></i> Detener
+                            </button>
+                            <button class="btn btn-secondary d-none" id="playRecordingBtn">
+                                <i class="fas fa-play"></i> Reproducir
+                            </button>
+                            <button class="btn btn-success d-none" id="submitRecordingBtn">
+                                <i class="fas fa-check"></i> Enviar
+                            </button>
+                        </div>
+                        
+                        <div class="recording-status mt-3">
+                            <div class="progress d-none" id="recordingProgress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <p class="text-muted small mt-2" id="recordingTime">Tiempo: 0:00</p>
+                        </div>
+                        
+                        <div class="feedback-area mt-4 d-none" id="feedbackArea">
+                            <h6>Retroalimentación</h6>
+                            <div class="feedback-content">
+                                <div class="feedback-item">
+                                    <span class="feedback-label">Pronunciación:</span>
+                                    <span class="feedback-value" id="pronunciationScore">--</span>
+                                </div>
+                                <div class="feedback-item">
+                                    <span class="feedback-label">Fluidez:</span>
+                                    <span class="feedback-value" id="fluencyScore">--</span>
+                                </div>
+                                <div class="feedback-item">
+                                    <span class="feedback-label">Volumen:</span>
+                                    <span class="feedback-value" id="volumeScore">--</span>
+                                </div>
+                            </div>
+                            <div class="feedback-suggestions mt-3">
+                                <h6>Sugerencias:</h6>
+                                <p id="feedbackSuggestions" class="small text-muted"></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="speaking-history mt-4">
+                        <h5>Historial de grabaciones</h5>
+                        <div class="recordings-list" id="recordingsList">
+                            <p class="text-muted small">No hay grabaciones aún</p>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -613,6 +693,7 @@
     <script src="js/levels/c1-challenges.js"></script>
     <script src="js/levels/c2-native-challenges.js"></script>
     <script src="js/stories.js"></script>
+    <script src="js/speaking-challenges.js"></script>
     <script src="js/app-main.js"></script>
     <script src="js/chat.js"></script>
 </body>
