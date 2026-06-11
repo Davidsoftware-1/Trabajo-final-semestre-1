@@ -1,0 +1,19 @@
+{
+  "users": [
+    {
+      "id": 1781150635547,
+      "nombre": "David",
+      "correo": "djlopez_1247@unihumboldt.edu.co",
+      "password": "123456",
+      "telefono": "+573011120129",
+      "native_language": "es",
+      "learning_language": "en",
+      "language_level": "A1",
+      "country": "",
+      "provider": "unihumboldt",
+      "createdAt": "2026-06-11T04:03:55.548Z"
+    }
+  ],
+  "conversations": [],
+  "messages": []
+}

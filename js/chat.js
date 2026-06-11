@@ -2,6 +2,11 @@
 const API_URL = 'http://localhost:3001/api';
 const SOCKET_URL = 'http://localhost:3001';
 
+// Load Socket.IO client
+const socketScript = document.createElement('script');
+socketScript.src = 'https://cdn.socket.io/4.8.3/socket.io.min.js';
+document.head.appendChild(socketScript);
+
 // State
 let currentUser = null;
 let token = null;
@@ -320,35 +325,44 @@ async function handleLogin() {
             localStorage.setItem('chat_token', token);
             localStorage.setItem('chat_user', JSON.stringify(currentUser));
             showChatInterface();
-            initializeSocket();
-            loadConversations();
         } else {
             Swal.fire('Error', data.message, 'error');
         }
     } catch (error) {
+        console.error('Error en login:', error);
         Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
     }
 }
 
 async function handleRegister() {
     const name = document.getElementById('registerName').value;
+    const countryCode = document.getElementById('registerCountryCode').value;
+    const phone = document.getElementById('registerPhone').value;
     const email = document.getElementById('registerEmail').value;
     const password = document.getElementById('registerPassword').value;
     const native_language = document.getElementById('nativeLanguage').value;
     const learning_language = document.getElementById('learningLanguage').value;
     const language_level = document.getElementById('languageLevel').value;
-    const country = document.getElementById('registerCountry').value;
     
-    if (!name || !email || !password) {
+    if (!name || !phone || !email || !password) {
         Swal.fire('Error', 'Por favor completa todos los campos requeridos', 'error');
         return;
     }
+
+    // Validar número de teléfono (mínimo 7 dígitos)
+    const phoneClean = phone.replace(/\s/g, '');
+    if (phoneClean.length < 7) {
+        Swal.fire('Error', 'Ingresa un número de teléfono válido (mínimo 7 dígitos)', 'error');
+        return;
+    }
+
+    const phoneComplete = `${countryCode}${phoneClean}`;
     
     try {
         const response = await fetch(`${API_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password, native_language, learning_language, language_level, country })
+            body: JSON.stringify({ name, email, password, phone: phoneComplete, native_language, learning_language, language_level })
         });
         
         const data = await response.json();
@@ -359,12 +373,11 @@ async function handleRegister() {
             localStorage.setItem('chat_token', token);
             localStorage.setItem('chat_user', JSON.stringify(currentUser));
             showChatInterface();
-            initializeSocket();
-            loadConversations();
         } else {
             Swal.fire('Error', data.message, 'error');
         }
     } catch (error) {
+        console.error('Error en registro:', error);
         Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
     }
 }
@@ -422,23 +435,200 @@ function showChatInterface() {
     loginScreen.classList.add('d-none');
     chatInterface.classList.remove('d-none');
     
-    document.getElementById('currentUserName').textContent = currentUser.name;
+    // Show simple black interface
+    document.getElementById('simpleChatInterface').classList.remove('d-none');
+    document.getElementById('fullChatInterface').classList.add('d-none');
+    
+    document.getElementById('currentUserName').textContent = currentUser.nombre;
     document.getElementById('currentUserStatus').textContent = 'en línea';
     
     if (currentUser.profile_photo) {
         document.querySelector('#currentUserProfile .profile-photo').src = currentUser.profile_photo;
     }
+
+    // Setup sidebar navigation
+    setupSidebarNavigation();
+
+    // Initialize Socket.IO
+    initializeSocket();
 }
+
+function setupSidebarNavigation() {
+    const navItems = document.querySelectorAll('.simple-sidebar .nav-item');
+    const sections = document.querySelectorAll('.content-section');
+
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Remove active class from all nav items
+            navItems.forEach(nav => nav.classList.remove('active'));
+            
+            // Add active class to clicked item
+            item.classList.add('active');
+            
+            // Hide all sections
+            sections.forEach(section => section.classList.remove('active'));
+            
+            // Show selected section
+            const sectionId = item.dataset.section + 'Section';
+            document.getElementById(sectionId).classList.add('active');
+
+            // Load friends when friends section is opened
+            if (item.dataset.section === 'friends') {
+                loadRecommendedFriends();
+            }
+        });
+    });
+}
+
+// Friends Functions
+async function loadRecommendedFriends() {
+    try {
+        const response = await fetch(`${API_URL}/chat/users?userId=${currentUser.id}`);
+        const data = await response.json();
+
+        if (data.ok) {
+            // Filter users based on user's learning language
+            const learningLanguage = currentUser.learning_language || 'en';
+            const recommendedUsers = data.users.filter(user => 
+                user.native_language === learningLanguage
+            );
+
+            renderFriendsList(recommendedUsers);
+        }
+    } catch (error) {
+        console.error('Error loading friends:', error);
+    }
+}
+
+function renderFriendsList(users) {
+    const friendsList = document.getElementById('friendsList');
+    friendsList.innerHTML = '';
+
+    if (users.length === 0) {
+        friendsList.innerHTML = `
+            <div class="no-friends">
+                <i class="fas fa-user-friends"></i>
+                <p>No hay usuarios recomendados por ahora</p>
+            </div>
+        `;
+        return;
+    }
+
+    users.forEach(user => {
+        const card = document.createElement('div');
+        card.className = 'friend-card';
+        card.innerHTML = `
+            <div class="friend-card-header">
+                <div class="friend-avatar">
+                    ${user.nombre.charAt(0).toUpperCase()}
+                </div>
+                <div class="friend-info">
+                    <h3>${user.nombre}</h3>
+                </div>
+            </div>
+            <div class="friend-languages">
+                <span class="language-badge">Nativo: ${getLanguageName(user.native_language)}</span>
+                <span class="language-badge">Aprendiendo: ${getLanguageName(user.learning_language)}</span>
+            </div>
+            <div class="friend-level">Nivel: ${user.language_level}</div>
+            <div class="friend-actions">
+                <button class="btn-start-chat" onclick="startChatWithUser(${user.id})">
+                    <i class="fas fa-comments"></i> Iniciar chat
+                </button>
+            </div>
+        `;
+        friendsList.appendChild(card);
+    });
+}
+
+function getLanguageName(code) {
+    const languages = {
+        'es': 'Español',
+        'en': 'Inglés',
+        'fr': 'Francés',
+        'de': 'Alemán',
+        'it': 'Italiano',
+        'pt': 'Portugués',
+        'zh': 'Chino',
+        'ja': 'Japonés'
+    };
+    return languages[code] || code;
+}
+
+async function startChatWithUser(userId) {
+    try {
+        const response = await fetch(`${API_URL}/chat/conversations`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                userId: currentUser.id,
+                participantId: userId
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.ok) {
+            // Switch to chats section
+            document.querySelector('[data-section="friends"]').classList.remove('active');
+            document.querySelector('[data-section="chats"]').classList.add('active');
+            document.getElementById('friendsSection').classList.remove('active');
+            document.getElementById('chatsSection').classList.add('active');
+            
+            // Load conversations
+            loadConversations();
+            
+            Swal.fire('Éxito', 'Conversación creada', 'success');
+        }
+    } catch (error) {
+        console.error('Error starting chat:', error);
+        Swal.fire('Error', 'No se pudo iniciar el chat', 'error');
+    }
+}
+
+// Search friends functionality
+document.addEventListener('DOMContentLoaded', () => {
+    const searchFriendsInput = document.getElementById('searchFriends');
+    if (searchFriendsInput) {
+        searchFriendsInput.addEventListener('input', async (e) => {
+            const query = e.target.value;
+            if (query.length > 2) {
+                try {
+                    const response = await fetch(`${API_URL}/chat/users?userId=${currentUser.id}&query=${query}`);
+                    const data = await response.json();
+                    if (data.ok) {
+                        renderFriendsList(data.users);
+                    }
+                } catch (error) {
+                    console.error('Error searching friends:', error);
+                }
+            } else if (query.length === 0) {
+                loadRecommendedFriends();
+            }
+        });
+    }
+});
 
 // Socket.IO Functions
 function initializeSocket() {
+    if (typeof io === 'undefined') {
+        console.error('Socket.IO not loaded');
+        return;
+    }
+
     socket = io(SOCKET_URL, {
         auth: { token }
     });
     
     socket.on('connect', () => {
         console.log('Connected to server');
-        updateUserStatus('online');
+        socket.emit('user:join', currentUser.id);
+        loadConversations();
     });
     
     socket.on('disconnect', () => {
@@ -447,11 +637,10 @@ function initializeSocket() {
     
     socket.on('error', (error) => {
         console.error('Socket error:', error);
-        Swal.fire('Error', error.message, 'error');
     });
     
     socket.on('message:new', (message) => {
-        if (currentConversation && currentConversation.id === message.conversation_id) {
+        if (currentConversation && currentConversation.id === message.conversationId) {
             appendMessage(message);
             markMessagesAsRead(message.id);
         } else {
@@ -459,33 +648,24 @@ function initializeSocket() {
         }
     });
     
-    socket.on('message:delivered', (data) => {
-        updateMessageStatus(data.messageId, 'delivered');
-    });
-    
     socket.on('message:read', (data) => {
         updateMessageStatus(data.messageId, 'read');
     });
     
-    socket.on('message:edited', (message) => {
-        updateMessageContent(message);
-    });
-    
-    socket.on('message:deleted', (data) => {
-        removeMessage(data.messageId);
-    });
-    
     socket.on('user:typing', (data) => {
         if (currentConversation && currentConversation.id === data.conversationId) {
-            showTypingIndicator(data.userId, data.isTyping);
+            showTypingIndicator(data.isTyping);
         }
     });
     
     socket.on('user:status', (data) => {
         updateUserStatusInList(data.userId, data.status);
-        if (currentConversation && currentConversation.other_user_id === data.userId) {
-            document.getElementById('activeConversationStatus').textContent = 
-                data.status === 'online' ? 'en línea' : 'desconectado';
+        if (currentConversation) {
+            const otherUserId = currentConversation.participants.find(id => id !== currentUser.id);
+            if (otherUserId === data.userId) {
+                document.getElementById('activeContactStatus').textContent = 
+                    data.status === 'online' ? 'en línea' : 'desconectado';
+            }
         }
     });
 }
@@ -504,7 +684,7 @@ function updateUserStatus(status) {
 // Conversation Functions
 async function loadConversations() {
     try {
-        const response = await fetch(`${API_URL}/conversations`, {
+        const response = await fetch(`${API_URL}/chat/conversations?userId=${currentUser.id}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -520,22 +700,32 @@ async function loadConversations() {
 }
 
 function renderConversations() {
+    const conversationsList = document.getElementById('conversationsList');
     conversationsList.innerHTML = '';
     
+    if (conversations.length === 0) {
+        conversationsList.innerHTML = `
+            <div class="no-conversations">
+                <p>No tienes conversaciones aún</p>
+            </div>
+        `;
+        return;
+    }
+    
     conversations.forEach(conversation => {
+        const otherUserId = conversation.participants.find(id => id !== currentUser.id);
         const div = document.createElement('div');
         div.className = `conversation-item ${currentConversation && currentConversation.id === conversation.id ? 'active' : ''}`;
         div.innerHTML = `
-            <img src="${conversation.display_photo || 'https://via.placeholder.com/50'}" alt="${conversation.display_name}" class="conversation-photo">
+            <div class="conversation-avatar">
+                ${getInitials(otherUserId)}
+            </div>
             <div class="conversation-info">
-                <div class="conversation-header">
-                    <span class="conversation-name">${conversation.display_name}</span>
-                    <span class="conversation-time">${formatTime(conversation.last_message_time)}</span>
-                </div>
-                <div class="conversation-preview">
-                    <span class="conversation-last-message">${conversation.last_message || 'Sin mensajes'}</span>
-                    ${conversation.unread_count > 0 ? `<span class="unread-badge">${conversation.unread_count}</span>` : ''}
-                </div>
+                <div class="conversation-name">Usuario ${otherUserId}</div>
+                <div class="conversation-last-message">${conversation.lastMessage || 'Sin mensajes'}</div>
+            </div>
+            <div class="conversation-time">
+                ${formatTime(conversation.lastMessageAt)}
             </div>
         `;
         
@@ -544,47 +734,32 @@ function renderConversations() {
     });
 }
 
-function filterConversations(query) {
-    const filtered = conversations.filter(conv => 
-        conv.display_name.toLowerCase().includes(query.toLowerCase()) ||
-        (conv.last_message && conv.last_message.toLowerCase().includes(query.toLowerCase()))
-    );
+function getInitials(userId) {
+    return userId.toString().charAt(0).toUpperCase();
+}
+
+function formatTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
     
-    conversationsList.innerHTML = '';
-    
-    filtered.forEach(conversation => {
-        const div = document.createElement('div');
-        div.className = `conversation-item ${currentConversation && currentConversation.id === conversation.id ? 'active' : ''}`;
-        div.innerHTML = `
-            <img src="${conversation.display_photo || 'https://via.placeholder.com/50'}" alt="${conversation.display_name}" class="conversation-photo">
-            <div class="conversation-info">
-                <div class="conversation-header">
-                    <span class="conversation-name">${conversation.display_name}</span>
-                    <span class="conversation-time">${formatTime(conversation.last_message_time)}</span>
-                </div>
-                <div class="conversation-preview">
-                    <span class="conversation-last-message">${conversation.last_message || 'Sin mensajes'}</span>
-                    ${conversation.unread_count > 0 ? `<span class="unread-badge">${conversation.unread_count}</span>` : ''}
-                </div>
-            </div>
-        `;
-        
-        div.addEventListener('click', () => selectConversation(conversation));
-        conversationsList.appendChild(div);
-    });
+    if (diff < 60000) return 'Ahora';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)} min`;
+    if (diff < 86400000) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleDateString();
 }
 
 async function selectConversation(conversation) {
     currentConversation = conversation;
     
     // Update UI
-    noConversationSelected.classList.add('d-none');
-    activeConversation.classList.remove('d-none');
+    document.getElementById('noConversationSelected').classList.add('d-none');
+    document.getElementById('activeConversation').classList.remove('d-none');
     
-    document.getElementById('activeConversationName').textContent = conversation.display_name;
-    document.getElementById('activeConversationPhoto').src = conversation.display_photo || 'https://via.placeholder.com/40';
-    document.getElementById('activeConversationStatus').textContent = 
-        conversation.other_user_status === 'online' ? 'en línea' : 'desconectado';
+    const otherUserId = conversation.participants.find(id => id !== currentUser.id);
+    document.getElementById('activeContactAvatar').textContent = getInitials(otherUserId);
+    document.getElementById('activeContactName').textContent = `Usuario ${otherUserId}`;
     
     // Join conversation room
     if (socket) {
@@ -600,15 +775,16 @@ async function selectConversation(conversation) {
 
 async function loadMessages(conversationId) {
     try {
-        const response = await fetch(`${API_URL}/conversations/${conversationId}/messages`, {
+        const response = await fetch(`${API_URL}/chat/conversations/${conversationId}/messages`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
         const data = await response.json();
         
         if (data.ok) {
+            const chatMessages = document.getElementById('chatMessages');
             chatMessages.innerHTML = '';
-            data.messages.reverse().forEach(message => {
+            data.messages.forEach(message => {
                 appendMessage(message);
             });
             scrollToBottom();
@@ -619,19 +795,19 @@ async function loadMessages(conversationId) {
 }
 
 // Message Functions
-function sendMessage() {
-    const content = messageInput.value.trim();
+async function sendMessage() {
+    const content = document.getElementById('messageInput').value.trim();
     
     if (!content || !currentConversation || !socket) return;
-    
+
     socket.emit('message:send', {
         conversationId: currentConversation.id,
-        content,
-        messageType: 'text'
+        senderId: currentUser.id,
+        content
     });
     
-    messageInput.value = '';
-    
+    document.getElementById('messageInput').value = '';
+
     // Stop typing indicator
     if (typingTimeout) {
         clearTimeout(typingTimeout);
@@ -640,384 +816,109 @@ function sendMessage() {
 }
 
 function appendMessage(message) {
-    const isSent = message.sender_id === currentUser.id;
+    const chatMessages = document.getElementById('chatMessages');
+    const isSent = message.senderId === currentUser.id;
     
     const div = document.createElement('div');
     div.className = `message ${isSent ? 'sent' : 'received'}`;
-    div.dataset.messageId = message.id;
-    
-    let contentHtml = '';
-    
-    if (message.reply_to_content) {
-        contentHtml += `
-            <div class="reply-message">
-                <span class="reply-author">${message.reply_to_sender_name}</span>
-                <span class="reply-content">${message.reply_to_content}</span>
-            </div>
-        `;
-    }
-    
-    contentHtml += `<div class="message-content">${message.content}</div>`;
-    
-    if (message.edited) {
-        contentHtml += `<span class="edited">(editado)</span>`;
-    }
-    
-    contentHtml += `
-        <div class="message-info">
-            <span class="message-time">${formatTime(message.created_at)}</span>
-            ${isSent ? `<span class="message-status">${message.read_at ? '✓✓' : message.delivered_at ? '✓' : ''}</span>` : ''}
-        </div>
+    div.innerHTML = `
+        <div class="message-content">${message.content}</div>
+        <div class="message-time">${formatTime(message.timestamp)}</div>
     `;
     
-    div.innerHTML = contentHtml;
     chatMessages.appendChild(div);
     scrollToBottom();
 }
 
 function scrollToBottom() {
+    const chatMessages = document.getElementById('chatMessages');
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-function handleTyping() {
-    if (!currentConversation || !socket) return;
-    
-    socket.emit('typing:start', currentConversation.id);
-    
-    if (typingTimeout) {
-        clearTimeout(typingTimeout);
-    }
-    
-    typingTimeout = setTimeout(() => {
-        socket.emit('typing:stop', currentConversation.id);
-    }, 1000);
-}
-
-function showTypingIndicator(userId, isTyping) {
-    const existingIndicator = document.querySelector('.typing-indicator');
-    
-    if (isTyping && !existingIndicator) {
-        const indicator = document.createElement('div');
-        indicator.className = 'typing-indicator';
-        indicator.innerHTML = `
-            <span></span>
-            <span></span>
-            <span></span>
-        `;
-        chatMessages.appendChild(indicator);
-        scrollToBottom();
-    } else if (!isTyping && existingIndicator) {
-        existingIndicator.remove();
+function showTypingIndicator(isTyping) {
+    const indicator = document.getElementById('typingIndicator');
+    if (isTyping) {
+        indicator.classList.add('show');
+    } else {
+        indicator.classList.remove('show');
     }
 }
 
 function markMessagesAsRead(messageId) {
-    if (socket && currentConversation) {
-        socket.emit('message:read', {
-            messageId,
-            conversationId: currentConversation.id
-        });
+    if (socket) {
+        socket.emit('message:read', { messageId });
     }
 }
 
 function updateMessageStatus(messageId, status) {
+    // Update message status in UI
     const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
     if (messageElement) {
-        const statusElement = messageElement.querySelector('.message-status');
-        if (statusElement) {
-            statusElement.textContent = status === 'read' ? '✓✓' : '✓';
-        }
-    }
-}
-
-function updateMessageContent(message) {
-    const messageElement = document.querySelector(`[data-message-id="${message.id}"]`);
-    if (messageElement) {
-        const contentElement = messageElement.querySelector('.message-content');
-        if (contentElement) {
-            contentElement.textContent = message.content;
-        }
-        
-        if (!messageElement.querySelector('.edited')) {
-            const editedSpan = document.createElement('span');
-            editedSpan.className = 'edited';
-            editedSpan.textContent = '(editado)';
-            messageElement.querySelector('.message-info').before(editedSpan);
-        }
-    }
-}
-
-function removeMessage(messageId) {
-    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-    if (messageElement) {
-        messageElement.remove();
+        // Add status indicator
     }
 }
 
 function updateUserStatusInList(userId, status) {
-    // Update status in conversation list
-    const conversation = conversations.find(conv => conv.other_user_id === userId);
-    if (conversation) {
-        conversation.other_user_status = status;
-        renderConversations();
+    // Update user status in conversations list
+    renderConversations();
+}
+
+// Setup chat event listeners
+function setupChatEventListeners() {
+    // Send message button
+    const sendBtn = document.getElementById('sendMessageBtn');
+    if (sendBtn) {
+        sendBtn.addEventListener('click', sendMessage);
     }
-}
 
-// Partner Matching Functions
-async function searchPartners() {
-    const nativeLanguage = document.getElementById('searchNativeLanguage').value;
-    const learningLanguage = document.getElementById('searchLearningLanguage').value;
-    
-    try {
-        const response = await fetch(`${API_URL}/users/search/match?native_language=${nativeLanguage}&learning_language=${learningLanguage}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        const data = await response.json();
-        
-        if (data.ok) {
-            renderPartners(data.users);
-        }
-    } catch (error) {
-        console.error('Error searching partners:', error);
-    }
-}
-
-function renderPartners(users) {
-    const partnersList = document.getElementById('partnersList');
-    partnersList.innerHTML = '';
-    
-    if (users.length === 0) {
-        partnersList.innerHTML = '<p class="text-center text-muted">No se encontraron compañeros</p>';
-        return;
-    }
-    
-    users.forEach(user => {
-        const div = document.createElement('div');
-        div.className = 'partner-item';
-        div.innerHTML = `
-            <img src="${user.profile_photo || 'https://via.placeholder.com/50'}" alt="${user.name}" class="partner-photo">
-            <div class="partner-info">
-                <div class="partner-name">${user.name}</div>
-                <div class="partner-languages">
-                    Habla: ${user.native_language} | Aprende: ${user.learning_language}
-                </div>
-            </div>
-            <div class="partner-actions">
-                <button class="btn btn-sm btn-primary" onclick="startConversation(${user.id})">
-                    <i class="fas fa-comment"></i> Chatear
-                </button>
-            </div>
-        `;
-        partnersList.appendChild(div);
-    });
-}
-
-async function startConversation(userId) {
-    try {
-        const response = await fetch(`${API_URL}/conversations/direct`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ userId })
-        });
-        
-        const data = await response.json();
-        
-        if (data.ok) {
-            document.getElementById('findPartnersModal').classList.add('d-none');
-            loadConversations();
-            
-            // Select the new conversation
-            setTimeout(() => {
-                const newConversation = conversations.find(conv => conv.id === data.conversation.id);
-                if (newConversation) {
-                    selectConversation(newConversation);
-                }
-            }, 500);
-        }
-    } catch (error) {
-        console.error('Error starting conversation:', error);
-    }
-}
-
-// Profile Functions
-function showProfileModal() {
-    document.getElementById('profileModal').classList.remove('d-none');
-    
-    // Load current profile data
-    document.getElementById('profileName').value = currentUser.name || '';
-    document.getElementById('profileCountry').value = currentUser.country || '';
-    document.getElementById('profileBio').value = currentUser.bio || '';
-    document.getElementById('profileInterests').value = currentUser.interests ? currentUser.interests.join(', ') : '';
-    
-    if (currentUser.profile_photo) {
-        document.getElementById('profilePhotoLarge').src = currentUser.profile_photo;
-    }
-}
-
-async function saveProfile() {
-    const name = document.getElementById('profileName').value;
-    const country = document.getElementById('profileCountry').value;
-    const bio = document.getElementById('profileBio').value;
-    const interestsStr = document.getElementById('profileInterests').value;
-    const interests = interestsStr ? interestsStr.split(',').map(i => i.trim()) : [];
-    
-    try {
-        const response = await fetch(`${API_URL}/users/profile`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ name, country, bio, interests })
-        });
-        
-        const data = await response.json();
-        
-        if (data.ok) {
-            currentUser = data.user;
-            localStorage.setItem('chat_user', JSON.stringify(currentUser));
-            document.getElementById('currentUserName').textContent = currentUser.name;
-            document.getElementById('profileModal').classList.add('d-none');
-            Swal.fire('Éxito', 'Perfil actualizado', 'success');
-        }
-    } catch (error) {
-        console.error('Error saving profile:', error);
-    }
-}
-
-async function handleProfilePhotoUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-        const response = await fetch(`${API_URL}/uploads/profile-photo`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (data.ok) {
-            currentUser.profile_photo = data.profilePhoto;
-            localStorage.setItem('chat_user', JSON.stringify(currentUser));
-            document.getElementById('profilePhotoLarge').src = data.profilePhoto;
-            document.querySelector('#currentUserProfile .profile-photo').src = data.profilePhoto;
-        }
-    } catch (error) {
-        console.error('Error uploading photo:', error);
-    }
-}
-
-// File Upload Functions
-let selectedFiles = [];
-
-function handleFileSelection(event) {
-    const files = Array.from(event.target.files);
-    selectedFiles = [...selectedFiles, ...files];
-    renderSelectedFiles();
-}
-
-function renderSelectedFiles() {
-    const fileList = document.getElementById('fileList');
-    fileList.innerHTML = '';
-    
-    selectedFiles.forEach((file, index) => {
-        const div = document.createElement('div');
-        div.className = 'file-item';
-        div.innerHTML = `
-            <i class="fas fa-file"></i>
-            <span class="file-name">${file.name}</span>
-            <span class="file-size">${formatFileSize(file.size)}</span>
-            <i class="fas fa-times remove-file" onclick="removeFile(${index})"></i>
-        `;
-        fileList.appendChild(div);
-    });
-}
-
-function removeFile(index) {
-    selectedFiles.splice(index, 1);
-    renderSelectedFiles();
-}
-
-async function uploadFiles() {
-    if (selectedFiles.length === 0 || !currentConversation) return;
-    
-    for (const file of selectedFiles) {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        try {
-            // First send a message
-            const messageResponse = await fetch(`${API_URL}/conversations/${currentConversation.id}/messages`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    content: file.name,
-                    messageType: getFileType(file.type)
-                })
-            });
-            
-            const messageData = await messageResponse.json();
-            
-            if (messageData.ok) {
-                // Then upload the file
-                await fetch(`${API_URL}/uploads/message/${messageData.message.id}`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData
-                });
+    // Message input - send on Enter
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
             }
-        } catch (error) {
-            console.error('Error uploading file:', error);
-        }
+        });
+
+        // Typing indicator
+        messageInput.addEventListener('input', () => {
+            if (socket && currentConversation) {
+                socket.emit('typing:start', {
+                    conversationId: currentConversation.id,
+                    userId: currentUser.id
+                });
+
+                if (typingTimeout) {
+                    clearTimeout(typingTimeout);
+                }
+
+                typingTimeout = setTimeout(() => {
+                    if (socket && currentConversation) {
+                        socket.emit('typing:stop', {
+                            conversationId: currentConversation.id,
+                            userId: currentUser.id
+                        });
+                    }
+                }, 1000);
+            }
+        });
     }
-    
-    selectedFiles = [];
-    renderSelectedFiles();
-    document.getElementById('fileUploadModal').classList.add('d-none');
-    loadMessages(currentConversation.id);
+
+    // New chat button
+    const newChatBtn = document.getElementById('newChatBtn');
+    if (newChatBtn) {
+        newChatBtn.addEventListener('click', () => {
+            // Switch to friends section
+            document.querySelector('[data-section="chats"]').classList.remove('active');
+            document.querySelector('[data-section="friends"]').classList.add('active');
+            document.getElementById('chatsSection').classList.remove('active');
+            document.getElementById('friendsSection').classList.add('active');
+            loadRecommendedFriends();
+        });
+    }
 }
 
-function getFileType(mimeType) {
-    if (mimeType.startsWith('image/')) return 'image';
-    if (mimeType.startsWith('audio/')) return 'audio';
-    if (mimeType.startsWith('video/')) return 'video';
-    return 'document';
-}
-
-// Utility Functions
-function formatTime(dateString) {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now - date;
-    
-    if (diff < 60000) return 'ahora';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)} min`;
-    if (diff < 86400000) return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-    if (diff < 604800000) return date.toLocaleDateString('es-ES', { weekday: 'short' });
-    return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
-}
-
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-}
-
-// Make functions available globally
-window.startConversation = startConversation;
-window.removeFile = removeFile;
+// Call setup when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    setupChatEventListeners();
+});

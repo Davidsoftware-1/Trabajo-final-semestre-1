@@ -30,6 +30,11 @@ if (!fs.existsSync(dataDir)) {
 const adapter = new JSONFile(dbFile);
 const db = new Low(adapter, { users: [] });
 
+// Base de datos separada para el chat
+const chatDbFile = path.join(dataDir, 'database', 'chat-database.json');
+const chatAdapter = new JSONFile(chatDbFile);
+const chatDb = new Low(chatAdapter, { users: [], conversations: [], messages: [] });
+
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -259,7 +264,7 @@ app.post('/api/register', async (req, res) => {
     console.log('Leyendo base de datos...');
     await db.read();
     console.log('Base de datos leída:', db.data);
-    const existing = db.data.users.find((user) => user.correo === normalizedCorreo);
+    const existing = db.data.users.find((user) => user.correo === normalizedCorreo && !user.isChatUser);
     if (existing) {
       console.warn('[REGISTER] Correo ya registrado:', normalizedCorreo);
       return res.status(409).json({ ok: false, message: 'Ese correo ya está registrado.' });
@@ -273,7 +278,8 @@ app.post('/api/register', async (req, res) => {
       provider: getProviderFromEmail(normalizedCorreo),
       xp: 40,
       streak: 4,
-      completed: [1]
+      completed: [1],
+      isChatUser: false
     };
 
     console.log('Usuario a crear:', user);
@@ -286,6 +292,82 @@ app.post('/api/register', async (req, res) => {
   } catch (error) {
     console.error('Error en registro:', error);
     res.status(500).json({ ok: false, message: 'No se pudo registrar el usuario.' });
+  }
+});
+
+// Endpoint separado para registro del chat
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    console.log('Datos recibidos para registro de chat:', req.body);
+    const { name, email, password, phone, native_language, learning_language, language_level, country } = req.body;
+
+    if (!name || !email || !password || !phone) {
+      console.warn('[CHAT REGISTER] Campos incompletos.');
+      return res.status(400).json({ ok: false, message: 'Todos los campos son obligatorios.' });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    console.log('Correo normalizado:', normalizedEmail);
+
+    if (!isValidEmail(normalizedEmail)) {
+      console.warn('[CHAT REGISTER] Correo inválido:', normalizedEmail);
+      return res.status(400).json({ ok: false, message: 'Ingresa un correo valido.' });
+    }
+
+    if (password.length < 6) {
+      console.warn('[CHAT REGISTER] Contraseña demasiado corta.');
+      return res.status(400).json({ ok: false, message: 'La contraseña debe tener al menos 6 caracteres.' });
+    }
+
+    // Validar teléfono (mínimo 7 dígitos)
+    const phoneClean = phone.replace(/\s/g, '');
+    if (phoneClean.length < 7) {
+      console.warn('[CHAT REGISTER] Teléfono inválido:', phone);
+      return res.status(400).json({ ok: false, message: 'Ingresa un número de teléfono válido.' });
+    }
+
+    console.log('Leyendo base de datos del chat...');
+    await chatDb.read();
+    console.log('Base de datos del chat leída:', chatDb.data);
+    
+    // Verificar si el correo ya está registrado en el chat
+    const existingChatUser = chatDb.data.users.find((user) => user.correo === normalizedEmail);
+    if (existingChatUser) {
+      console.warn('[CHAT REGISTER] Correo ya registrado en el chat:', normalizedEmail);
+      return res.status(409).json({ ok: false, message: 'Ese correo ya está registrado en el chat.' });
+    }
+
+    const chatUser = {
+      id: Date.now(),
+      nombre: name.trim(),
+      correo: normalizedEmail,
+      password: password,
+      telefono: phoneClean,
+      native_language: native_language || 'es',
+      learning_language: learning_language || 'en',
+      language_level: language_level || 'A1',
+      country: country || '',
+      provider: getProviderFromEmail(normalizedEmail),
+      createdAt: new Date().toISOString()
+    };
+
+    console.log('Usuario de chat a crear:', chatUser);
+    chatDb.data.users.push(chatUser);
+    console.log('Escribiendo en base de datos del chat...');
+    await chatDb.write();
+    console.log('Usuario de chat guardado exitosamente');
+
+    // Generar token para el chat
+    const token = Buffer.from(JSON.stringify({
+      userId: chatUser.id,
+      email: chatUser.correo,
+      timestamp: Date.now()
+    })).toString('base64');
+
+    res.status(201).json({ ok: true, user: { id: chatUser.id, nombre: chatUser.nombre, correo: chatUser.correo, telefono: chatUser.telefono }, token });
+  } catch (error) {
+    console.error('Error en registro de chat:', error);
+    res.status(500).json({ ok: false, message: 'No se pudo registrar el usuario en el chat.' });
   }
 });
 
@@ -304,7 +386,7 @@ app.post('/api/login', async (req, res) => {
     }
 
     await db.read();
-    const user = db.data.users.find((entry) => entry.correo === normalizedCorreo);
+    const user = db.data.users.find((entry) => entry.correo === normalizedCorreo && !entry.isChatUser);
     if (!user) {
       return res.status(401).json({ ok: false, message: 'Usuario no encontrado.' });
     }
@@ -327,6 +409,210 @@ app.post('/api/login', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ ok: false, message: 'No se pudo iniciar sesión.' });
+  }
+});
+
+// Endpoint separado para login del chat
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ ok: false, message: 'Correo y contraseña requeridos.' });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!isValidEmail(normalizedEmail)) {
+      return res.status(400).json({ ok: false, message: 'Ingresa un correo valido.' });
+    }
+
+    await chatDb.read();
+    const user = chatDb.data.users.find((entry) => entry.correo === normalizedEmail);
+    if (!user) {
+      return res.status(401).json({ ok: false, message: 'Usuario no encontrado en el chat.' });
+    }
+
+    if (password !== user.password) {
+      return res.status(401).json({ ok: false, message: 'Contraseña incorrecta.' });
+    }
+
+    const safeUser = {
+      id: user.id,
+      nombre: user.nombre,
+      correo: user.correo,
+      telefono: user.telefono,
+      native_language: user.native_language,
+      learning_language: user.learning_language,
+      language_level: user.language_level,
+      country: user.country
+    };
+
+    // Generar token para el chat
+    const token = Buffer.from(JSON.stringify({
+      userId: user.id,
+      email: user.correo,
+      timestamp: Date.now()
+    })).toString('base64');
+
+    res.json({ ok: true, user: safeUser, token });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ ok: false, message: 'No se pudo iniciar sesión en el chat.' });
+  }
+});
+
+// API del Chat - Obtener conversaciones del usuario
+app.get('/api/chat/conversations', async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    
+    if (!userId) {
+      return res.status(400).json({ ok: false, message: 'ID de usuario requerido.' });
+    }
+
+    await chatDb.read();
+    const conversations = chatDb.data.conversations.filter(conv => 
+      conv.participants.includes(parseInt(userId))
+    );
+
+    res.json({ ok: true, conversations });
+  } catch (error) {
+    console.error('Error al obtener conversaciones:', error);
+    res.status(500).json({ ok: false, message: 'No se pudieron obtener las conversaciones.' });
+  }
+});
+
+// API del Chat - Crear nueva conversación
+app.post('/api/chat/conversations', async (req, res) => {
+  try {
+    const { userId, participantId } = req.body;
+    
+    if (!userId || !participantId) {
+      return res.status(400).json({ ok: false, message: 'IDs de usuarios requeridos.' });
+    }
+
+    await chatDb.read();
+    
+    // Verificar si ya existe una conversación entre estos usuarios
+    const existingConversation = chatDb.data.conversations.find(conv =>
+      conv.participants.includes(parseInt(userId)) && 
+      conv.participants.includes(parseInt(participantId))
+    );
+
+    if (existingConversation) {
+      return res.json({ ok: true, conversation: existingConversation });
+    }
+
+    const newConversation = {
+      id: Date.now(),
+      participants: [parseInt(userId), parseInt(participantId)],
+      createdAt: new Date().toISOString(),
+      lastMessage: null,
+      lastMessageAt: null
+    };
+
+    chatDb.data.conversations.push(newConversation);
+    await chatDb.write();
+
+    res.status(201).json({ ok: true, conversation: newConversation });
+  } catch (error) {
+    console.error('Error al crear conversación:', error);
+    res.status(500).json({ ok: false, message: 'No se pudo crear la conversación.' });
+  }
+});
+
+// API del Chat - Obtener mensajes de una conversación
+app.get('/api/chat/conversations/:conversationId/messages', async (req, res) => {
+  try {
+    const conversationId = parseInt(req.params.conversationId);
+    
+    await chatDb.read();
+    const messages = chatDb.data.messages.filter(msg => 
+      msg.conversationId === conversationId
+    );
+
+    res.json({ ok: true, messages });
+  } catch (error) {
+    console.error('Error al obtener mensajes:', error);
+    res.status(500).json({ ok: false, message: 'No se pudieron obtener los mensajes.' });
+  }
+});
+
+// API del Chat - Enviar mensaje
+app.post('/api/chat/messages', async (req, res) => {
+  try {
+    const { conversationId, senderId, content } = req.body;
+    
+    if (!conversationId || !senderId || !content) {
+      return res.status(400).json({ ok: false, message: 'Datos incompletos.' });
+    }
+
+    await chatDb.read();
+    
+    const newMessage = {
+      id: Date.now(),
+      conversationId: parseInt(conversationId),
+      senderId: parseInt(senderId),
+      content: content,
+      timestamp: new Date().toISOString(),
+      read: false
+    };
+
+    chatDb.data.messages.push(newMessage);
+    
+    // Actualizar última información de la conversación
+    const conversation = chatDb.data.conversations.find(conv => conv.id === parseInt(conversationId));
+    if (conversation) {
+      conversation.lastMessage = content;
+      conversation.lastMessageAt = new Date().toISOString();
+    }
+    
+    await chatDb.write();
+
+    res.status(201).json({ ok: true, message: newMessage });
+  } catch (error) {
+    console.error('Error al enviar mensaje:', error);
+    res.status(500).json({ ok: false, message: 'No se pudo enviar el mensaje.' });
+  }
+});
+
+// API del Chat - Buscar usuarios
+app.get('/api/chat/users', async (req, res) => {
+  try {
+    const query = req.query.query;
+    const currentUserId = req.query.userId;
+    
+    await chatDb.read();
+    
+    let users = chatDb.data.users;
+    
+    if (query) {
+      users = users.filter(user => 
+        user.nombre.toLowerCase().includes(query.toLowerCase()) ||
+        user.correo.toLowerCase().includes(query.toLowerCase())
+      );
+    }
+    
+    // Excluir al usuario actual
+    if (currentUserId) {
+      users = users.filter(user => user.id !== parseInt(currentUserId));
+    }
+    
+    // Retornar solo información pública
+    const safeUsers = users.map(user => ({
+      id: user.id,
+      nombre: user.nombre,
+      native_language: user.native_language,
+      learning_language: user.learning_language,
+      language_level: user.language_level,
+      country: user.country
+    }));
+
+    res.json({ ok: true, users: safeUsers });
+  } catch (error) {
+    console.error('Error al buscar usuarios:', error);
+    res.status(500).json({ ok: false, message: 'No se pudieron buscar usuarios.' });
   }
 });
 
