@@ -1,7 +1,5 @@
 const express = require('express');
 const path = require('path');
-const { Low } = require('lowdb');
-const { JSONFile } = require('lowdb/node');
 const https = require('https');
 const fs = require('fs');
 
@@ -27,13 +25,25 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-const adapter = new JSONFile(dbFile);
-const db = new Low(adapter, { users: [] });
+let db;
+let chatDb;
 
-// Base de datos separada para el chat
 const chatDbFile = path.join(dataDir, 'database', 'chat-database.json');
-const chatAdapter = new JSONFile(chatDbFile);
-const chatDb = new Low(chatAdapter, { users: [], conversations: [], messages: [] });
+
+async function initLowdb() {
+  const { Low } = await import('lowdb');
+  const { JSONFile } = await import('lowdb/node');
+
+  const adapter = new JSONFile(dbFile);
+  db = new Low(adapter, { users: [] });
+
+  const chatDbDir = path.join(dataDir, 'database');
+  if (!fs.existsSync(chatDbDir)) {
+    fs.mkdirSync(chatDbDir, { recursive: true });
+  }
+  const chatAdapter = new JSONFile(chatDbFile);
+  chatDb = new Low(chatAdapter, { users: [], conversations: [], messages: [] });
+}
 
 app.use(express.json());
 
@@ -112,9 +122,7 @@ async function initDb() {
   }, 60 * 60 * 1000); // Cada hora
 }
 
-initDb().catch((error) => {
-  console.error('[DB] Error iniciando la base de datos. ¿El archivo existe y se puede escribir?', error);
-});
+// startup sequence moved to bottom
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, message: 'Pangolingo API activa' });
@@ -754,6 +762,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ ok: false, message: 'Error interno del servidor.', error: err && err.message });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Pangolingo API corriendo en http://localhost:${PORT}`);
+initLowdb().then(() => {
+  return initDb();
+}).then(() => {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor corriendo en puerto ${PORT}`);
+  });
+}).catch((error) => {
+  console.error('[DB] Error iniciando:', error);
+  process.exit(1);
 });
